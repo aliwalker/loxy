@@ -7,6 +7,7 @@
 #include <string>
 #include <cassert>
 #include <cstring>
+#include <memory>
 #include "chunk.h"
 #include "common.h"
 #include "vm.h"
@@ -15,8 +16,11 @@ namespace loxy {
 
 class LoxyObj;
 class LoxyString;
+class LoxyModule;
 
-typedef LoxyObj*  LoxyRef;
+typedef LoxyObj*  LoxyObjRef;
+typedef LoxyString* LoxyStringRef;
+typedef LoxyModule* LoxyModuleRef;
 
 // Value representation.
 
@@ -34,11 +38,11 @@ enum class ValueType {
 union Variant {
   Variant(double n) : number(n) {}
   Variant(bool v) : boolean(v) {}
-  Variant(LoxyRef obj): obj(obj) {}
+  Variant(LoxyObjRef obj): obj(obj) {}
 
   bool boolean;
   double number;
-  LoxyRef obj;
+  LoxyObjRef obj;
 };
 
 class Value {
@@ -75,7 +79,7 @@ public:
     return as.number;
   }
 
-  inline operator LoxyRef () const {
+  inline operator LoxyObjRef () const {
     assert(type == ValueType::Obj);
     return as.obj;
   }
@@ -88,7 +92,7 @@ public:
     case ValueType::Nil:    return true;
     case ValueType::Undef:  return true;
     case ValueType::Number: return (double)other == (double)(*this);
-    case ValueType::Obj:    return (LoxyRef)other == (LoxyRef)(*this);
+    case ValueType::Obj:    return (LoxyObjRef)other == (LoxyObjRef)(*this);
     }
   }
 
@@ -98,8 +102,9 @@ public:
 
   Value(ValueType type, Variant as) : type(type), as(as) {}
 
+  Value(bool isTrue);
   Value(double number);
-  Value(LoxyRef ref);
+  Value(LoxyObjRef ref);
 };
 
 // Object representations.
@@ -107,8 +112,8 @@ public:
 
 typedef uint32_t Hash;
 typedef uint8_t* IPPtr;
-typedef std::map<LoxyString*, Value> SymbolTable;
-typedef std::map<Hash, LoxyString*> StringPool;
+typedef std::map<LoxyStringRef, Value> SymbolTable;
+typedef std::map<Hash, LoxyStringRef> StringPool;
 
 // global string pool.
 StringPool stringPool;
@@ -118,9 +123,16 @@ class LoxyObj {
 public:
 
   bool    isDark;
-  LoxyRef next;
+  LoxyObjRef next;
 
   LoxyObj() : isDark(false), next(NULL) {}
+
+private:
+  // all object allocation is guarded by vm.
+  void * operator new   (size_t) = delete;
+  void * operator new[] (size_t) = delete;
+  void   operator delete   (void *) = delete;
+  void   operator delete[] (void*) = delete;
 };
 
 /// LoxyString - string class.
@@ -134,8 +146,6 @@ private:
   static Hash hashString(const char *s);
 
 public:
-  LoxyString(const char *chars, int length, Hash hash) :
-    chars(chars), length(length), _hash(hash) {}
 
   Hash hash() const { return _hash; }
 
@@ -149,26 +159,31 @@ class LoxyModule : public LoxyObj {
 private:
 
   // the name of the module.
-  LoxyString *name;
+  LoxyStringRef name;
 
   // the chunk that contains bytecode.
-  Chunk *chunk;
+  ChunkRef chunk;
 
   // top-level variables.
   SymbolTable globals;
 
-  /// local variables are stored directly on the stack.
+  // local variables are stored directly on the stack.
 
 public:
 
-  // next instruction to be read.
-  IPPtr ip;
+  ChunkRef getChunk() const { return chunk; }
+  void setChunk(ChunkRef c) { chunk = c; }
 
-  LoxyModule(Chunk *chunk, LoxyString *name) : name(name), chunk(chunk) {}
+  LoxyStringRef getName() const { return name; }
+  void setName(LoxyStringRef n) { name = n; }
+
+  LoxyModule(ChunkRef chunk, LoxyStringRef name) : name(name), chunk(chunk) {}
 
   /// getGlobal - finds a top-level variable within this module
   ///   if not found, returns false without setting [result].
-  bool getGlobal(LoxyString *name, Value *result);
+  bool getGlobal(LoxyStringRef name, Value *result);
+
+  static LoxyModuleRef create(LoxyVM &vm, const char *name);
 };
 
 

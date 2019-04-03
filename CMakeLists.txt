@@ -8,15 +8,9 @@ set(SOURCES
     src/value.cc
     src/vm.cc)
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 
 add_executable(loxy ${SOURCES})
 target_include_directories(
   loxy PUBLIC
-  src/chunk.h
-  src/common.h
-  src/compiler.h
-  src/memory.h
-  src/opcode.h
-  src/value.h
-  src/vm.h)
+  src)

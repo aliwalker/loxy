@@ -8,7 +8,9 @@
 
 namespace loxy {
 
-class Value;
+class Chunk;
+
+typedef std::shared_ptr<Chunk> ChunkRef;
 
 enum class OpCode: uint8_t {
   CONSTANT,
@@ -49,10 +51,22 @@ public:
 public:
   /// write - writes a byte to chunk's code.
   void write(uint8_t byte, int line);
+
+  /// read - reads a piece of bytecode.
+  constexpr uint8_t read(size_t offset) const { return code[offset]; }
+
+  /// size - returns the size of the bytecode array.
+  constexpr size_t size() const noexcept { return code.size(); }
   
   /// addConstant - adds [value] to its constant pool & returns the index
   ///   of the added value in the pool.
   int addConstant(Value value);
+
+  /// getConstants - returns the constant value at [index].
+  Value getConstant(size_t index) const { return constants[index]; }
+
+public:
+  static ChunkRef create() { return std::make_shared<Chunk>(); }
 };
 
 };

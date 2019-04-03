@@ -9,8 +9,16 @@
 
 namespace loxy {
 
-void LoxyVM::runtimeError(const char *format, ...) {
+InterpretResult LoxyVM::interpret(const char *source, const char *module) {
+  auto prevComp = compiler;
+  compiler = std::make_shared<Compiler>(*this);
+
   
+  
+}
+
+void LoxyVM::runtimeError(const char *format, ...) {
+
 }
 
 } // namespace loxy

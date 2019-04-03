@@ -9,7 +9,7 @@ namespace loxy {
 // class Value
 //
 Value::Value(double number) : type(ValueType::Number), as(number) {}
-Value::Value(LoxyRef ref) : type(ValueType::Obj), as(ref) {}
+Value::Value(LoxyObjRef ref) : type(ValueType::Obj), as(ref) {}
 
 const Value Value::Nil(ValueType::Nil, Variant((double)0));
 const Value Value::Undef(ValueType::Undef, Variant((double)0));
@@ -30,16 +30,16 @@ Hash LoxyString::hashString(const char *chars) {
   return _hash;
 }
 
-LoxyString *LoxyString::create(LoxyVM &vm, const char *chars, bool take) {
+LoxyStringRef LoxyString::create(LoxyVM &vm, const char *chars, bool take) {
   Hash hash = hashString(chars);
   auto s = stringPool.find(hash);
-
-  LoxyString *ref = (LoxyString*)vm.newObject(sizeof(LoxyString));
 
   // If we've interned this string, simply return it.
   if (s != stringPool.end()) {
     return s->second;
   }
+
+  LoxyStringRef ref = vm.newObject<LoxyString, LoxyStringRef>();
 
   if (take) {
     ref->chars = chars;
@@ -56,7 +56,7 @@ LoxyString *LoxyString::create(LoxyVM &vm, const char *chars, bool take) {
 
 // class LoxyModule
 //
-bool LoxyModule::getGlobal(LoxyString *name, Value *result) {
+bool LoxyModule::getGlobal(LoxyStringRef name, Value *result) {
   auto global = globals.find(name);
 
   if (global == globals.end()) {
@@ -65,6 +65,17 @@ bool LoxyModule::getGlobal(LoxyString *name, Value *result) {
 
   *result = global->second;
   return true;
+}
+
+LoxyModuleRef LoxyModule::create(LoxyVM &vm, const char *name) {
+  auto modName = LoxyString::create(vm, name);
+  auto chunk = Chunk::create();
+
+  auto mod = vm.newObject<LoxyModule, LoxyModuleRef>();
+  mod->chunk = chunk;
+  mod->name = modName;
+
+  return mod;
 }
 
 } // namespace loxy

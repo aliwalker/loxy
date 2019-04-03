@@ -1,5 +1,6 @@
 #include <iostream>
 #include <functional>
+#include <memory>
 #include <string>
 #include "common.h"
 #include "compiler.h"
@@ -430,7 +431,7 @@ private:
 public:
   /// Parser - takes [source] as source code & initializes
   ///   internal states. Source can be NULL for convenience.
-  Parser(const char *source = NULL);
+  Parser(LoxyVM &vm, const char *source = NULL);
 
   /// parse - main interface for parsing [source] code and emitting
   ///   corresponding bytecode to [compilingChunk].
@@ -695,7 +696,7 @@ void Parser::string() {
 
   char *chars = strdup(previous.start + 1);
   chars[strlen(chars) - 1] = '\0';
-  LoxyRef s = LoxyString::create(vm, chars, true);
+  LoxyObjRef s = LoxyString::create(vm, chars, true);
 
   emitConstant(Value(s));
 }
@@ -917,5 +918,16 @@ void Parser::errorAt(const Token &token, const char *msg) {
   std::cerr << ": " << msg << std::endl;
   hadErorr = true;
 }
+
+// class Compiler
+Compiler::Compiler(LoxyVM &vm) {
+  parser = std::make_unique<Parser>(vm);
+}
+
+void Compiler::compile(const char *source, LoxyModule &module) {
+  parser->parse(*module.getChunk(), source);
+}
+
+CompilerRef Compiler::create(LoxyVM &vm) { return std::make_shared<Compiler>(vm); }
 
 } // namespace loxy

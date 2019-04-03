@@ -8,23 +8,34 @@
 namespace loxy {
 
 class Chunk;
+class Compiler;
 class LoxyVM;
 class Parser;
 class LoxyModule;
 
+typedef std::shared_ptr<Compiler> CompilerRef;
+typedef std::unique_ptr<Parser> ParserRef;
+
 /// class Compiler - the compiler class for Loxy.
 class Compiler {
-  Parser &parser;
-  LoxyVM &vm;
+private:
+
+  /// previous compiler.
+  CompilerRef parent = NULL;
+
+  ParserRef parser;
+
 public:
   Compiler(LoxyVM &vm);
 
   /// Compile - compiles over [source].
-  void Compile(const char *source, LoxyModule &module);
-  void markCompiler();
+  void compile(const char *source, LoxyModule &module);
 
-public:
-  Chunk *compilingChunk;
+  CompilerRef getParent() const { return parent; }
+
+  void setParent(CompilerRef _compiler) { parent = _compiler; }
+
+  static CompilerRef create(LoxyVM &vm);
 };
 
 } // namespace loxy

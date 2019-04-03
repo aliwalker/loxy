@@ -19,9 +19,10 @@ class LoxyObj;
 class LoxyString;
 class LoxyModule;
 
-typedef uint8_t* IPPtr;
-
-typedef LoxyObj* LoxyRef;
+typedef LoxyObj*  LoxyObjRef;
+typedef LoxyString* LoxyStringRef;
+typedef LoxyModule* LoxyModuleRef;
+typedef std::shared_ptr<Chunk> ChunkRef;
 
 enum class InterpretResult {
   Ok,
@@ -42,12 +43,13 @@ public:
 
   // gc related methods.
   //
-  LoxyRef newObject(size_t size);
+  template<typename T, typename TRef>
+  TRef newObject();
 
 public:
 
   // currently compiling compiler.
-  Compiler  *compiler;
+  std::shared_ptr<Compiler> compiler = NULL;
 
   // loaded modules.
   std::vector<LoxyModule*> modules;
@@ -55,15 +57,19 @@ public:
   // module that's currently executing.
   LoxyModule *currModule;
 
+  // offset in the currModule's chunk.
+  size_t offset = 0;
+
   // execution stack.
   std::vector<Value> stack;
 
   // interned strings.
   std::set<LoxyString*, bool> strings;
-private:
 
-  // gets next instruction pointer.
-  IPPtr getIP();
+  // A linked-list of allocated objects.
+  LoxyObjRef first = NULL;
+
+private:
 
   void runtimeError(const char *format, ...);
 
@@ -71,6 +77,19 @@ private:
   Value readConstant();
   LoxyString *readString();
 };
+
+template<typename T, typename TRef>
+TRef LoxyVM::newObject() {
+  static_assert(std::is_base_of<LoxyObj, T>::value, "type for creation isn't derived from LoxyObj");
+
+  size_t size = sizeof(T);
+  TRef ref = (TRef)realloc(NULL, size);
+
+  allocatedBytes += size;
+  ref->next = first;
+  first = ref;
+  return ref;
+}
 
 } // namespace loxy
 
