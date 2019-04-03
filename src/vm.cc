@@ -11,10 +11,7 @@ namespace loxy {
 
 InterpretResult LoxyVM::interpret(const char *source, const char *module) {
   auto prevComp = compiler;
-  compiler = std::make_shared<Compiler>(*this);
-
-  
-  
+  compiler = Compiler::create(*this);
 }
 
 void LoxyVM::runtimeError(const char *format, ...) {

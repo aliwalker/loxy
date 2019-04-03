@@ -8,12 +8,12 @@
 #include <cassert>
 #include <cstring>
 #include <memory>
-#include "chunk.h"
 #include "common.h"
 #include "vm.h"
 
 namespace loxy {
 
+class Chunk;
 class LoxyObj;
 class LoxyString;
 class LoxyModule;

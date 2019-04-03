@@ -9,6 +9,7 @@
 namespace loxy {
 
 class Chunk;
+class Value;
 
 typedef std::shared_ptr<Chunk> ChunkRef;
 
@@ -63,7 +64,7 @@ public:
   int addConstant(Value value);
 
   /// getConstants - returns the constant value at [index].
-  Value getConstant(size_t index) const { return constants[index]; }
+  Value getConstant(size_t index) const; //{ return constants[index]; }
 
 public:
   static ChunkRef create() { return std::make_shared<Chunk>(); }
