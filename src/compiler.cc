@@ -1,5 +1,6 @@
 #include <iostream>
 #include <functional>
+#include <string>
 #include "common.h"
 #include "compiler.h"
 #include "value.h"
@@ -375,6 +376,7 @@ public:
 /// class Parser - Parser class for Loxy. Parse is the actual compiler for Loxy, since it
 ///   lexes, parses and emits for current function scope.
 class Parser {
+  LoxyVM &vm;
   // scanner is a part of parser.
   Scanner scanner;
   Token current;
@@ -684,13 +686,18 @@ void Parser::literal() {
 // prefix for Tok::NUMBER.
 void Parser::number() {
   double value = strtod(previous.start, NULL);
-  emitConstant(NUMBER_VAL(value));
+  emitConstant(Value(value));
 }
 
 // prefix for Tok::STRING.
 void Parser::string() {
   // trim the leading and trailing ".
-  emitConstant(OBJ_VAL(ObjString::from(previous.start + 1, previous.length - 2)));
+
+  char *chars = strdup(previous.start + 1);
+  chars[strlen(chars) - 1] = '\0';
+  LoxyRef s = LoxyString::create(vm, chars, true);
+
+  emitConstant(Value(s));
 }
 
 // prefix for Tok::IDENTIFIER.
@@ -808,7 +815,8 @@ void Parser::defineVariable(uint8_t global) {
 }
 
 uint8_t Parser::identifierConstant(Token &name) {
-  return makeConstant(OBJ_VAL(ObjString::from(name.start, name.length)));
+  auto nameChars = LoxyString::create(vm, name.start);
+  return makeConstant(Value(nameChars));
 }
 
 bool Parser::identifiersEqual(Token &name1, Token &name2) {

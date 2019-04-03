@@ -5,13 +5,18 @@ project(loxy)
 set(SOURCES
     src/chunk.cc
     src/compiler.cc
-    src/memory.cc
-    src/table.cc
-    src/value.cc)
+    src/value.cc
+    src/vm.cc)
 
 set (CMAKE_CXX_STANDARD 11)
 
 add_executable(loxy ${SOURCES})
 target_include_directories(
   loxy PUBLIC
-  src)
+  src/chunk.h
+  src/common.h
+  src/compiler.h
+  src/memory.h
+  src/opcode.h
+  src/value.h
+  src/vm.h)

@@ -12,6 +12,17 @@
 
 namespace loxy {
 
+class Chunk;
+class Compiler;
+class Value;
+class LoxyObj;
+class LoxyString;
+class LoxyModule;
+
+typedef uint8_t* IPPtr;
+
+typedef LoxyObj* LoxyRef;
+
 enum class InterpretResult {
   Ok,
   Compile_Error,
