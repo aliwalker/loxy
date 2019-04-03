@@ -1,61 +1,70 @@
+#include <stdio.h>
+#include <cstring>
 #include "value.h"
 #include "memory.h"
 #include "vm.h"
 
 namespace loxy {
 
-bool Value::valuesEqual(Value a, Value b) {
-  if (a.type != b.type) return false;
+// class Value
+//
+Value::Value(double number) : type(ValueType::Number), as(number) {}
+Value::Value(LoxyRef ref) : type(ValueType::Obj), as(ref) {}
 
-  switch (a.type) {
-  case ValueType::Bool :  return AS_BOOL(a) == AS_BOOL(b);
-  case ValueType::Nil : return true;
-  case ValueType::Number :  return AS_NUMBER(a) == AS_NUMBER(b);
-  case ValueType::Obj : {
-    return AS_OBJ(a) == AS_OBJ(b);
-  }
-  }
-}
+const Value Value::Nil(ValueType::Nil, Variant((double)0));
+const Value Value::Undef(ValueType::Undef, Variant((double)0));
+const Value Value::True(ValueType::Bool, Variant(true));
+const Value Value::False(ValueType::Bool, Variant(false));
 
-static uint32_t hashString(const char *key, int length) {
-  uint32_t hash = 2166136261u;
+// class LoxyString
+//
+Hash LoxyString::hashString(const char *chars) {
+  int length = strlen(chars);
+  Hash _hash = 2166136261u;
 
   for (int i = 0; i < length; i++) {
-    hash ^= key[i];
-    hash *= 16777619;
+    _hash ^= chars[i];
+    _hash *= 16777619;
   }
 
-  return hash;
+  return _hash;
 }
 
-static uint32_t hashObject(Obj *obj) {
-  switch (obj->type) {
-  // strings are hashed on creation.
-  case ObjType::String :  return ((ObjString*)obj)->hash;
-  default:
-    ASSERT(false, "Only immutable objects can be hashed.");
-    return 0;
+LoxyString *LoxyString::create(LoxyVM &vm, const char *chars, bool take) {
+  Hash hash = hashString(chars);
+  auto s = stringPool.find(hash);
+
+  LoxyString *ref = (LoxyString*)vm.newObject(sizeof(LoxyString));
+
+  // If we've interned this string, simply return it.
+  if (s != stringPool.end()) {
+    return s->second;
   }
-}
 
-uint32_t Value::hashValue(Value value) {
-  switch (value.type) {
-  case ValueType::Obj : return hashObject(AS_OBJ(value));
-  case ValueType::Nil : return 1;
-  case ValueType::Bool : AS_BOOL(value) ? 2 : 0;
-  default:
-    ASSERT(false, "Unhashable value!");
-    return 0;
+  if (take) {
+    ref->chars = chars;
+  } else {
+    ref->chars = strdup(chars);
   }
+
+  ref->length = strlen(chars);
+  ref->_hash = hash;
+
+  // put it in pool.
+  stringPool[hash] = ref;
 }
 
-bool Obj::isObjType(Value value, ObjType type) {
-  return IS_OBJ(value) && AS_OBJ(value)->type == type;
+// class LoxyModule
+//
+bool LoxyModule::getGlobal(LoxyString *name, Value *result) {
+  auto global = globals.find(name);
+
+  if (global == globals.end()) {
+    return false;
+  }
+
+  *result = global->second;
+  return true;
 }
 
-ObjString * ObjString::from(const char *chars, int length, bool take) {
-  uint32_t  hash = hashString(chars, length);
-  
-}
-
-}
+} // namespace loxy

@@ -1,4 +1,5 @@
 Loxy
 ====
 
-A complete Lox implementation(WIP). This includes a compiler that compiles to bytecode, and a vm for executing compiled bytecode.
+A complete Lox implementation(WIP).
+This includes a compiler that compiles to bytecode, and a vm for executing compiled bytecode.

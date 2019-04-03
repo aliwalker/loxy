@@ -2,12 +2,23 @@
 #ifndef loxy_value_h
 #define loxy_value_h
 
+#include <map>
+#include <set>
+#include <string>
+#include <cassert>
+#include <cstring>
+#include "chunk.h"
 #include "common.h"
+#include "vm.h"
 
 namespace loxy {
 
-struct Obj;
-struct ObjString;
+class LoxyObj;
+class LoxyString;
+
+typedef LoxyObj*  LoxyRef;
+
+// Value representation.
 
 /// ValueType - type tag for each Value.
 enum class ValueType {
@@ -20,94 +31,146 @@ enum class ValueType {
   Undef,
 };
 
-struct Value {
-  ValueType type;
-  union {
-    bool boolean;
-    double number;
+union Variant {
+  Variant(double n) : number(n) {}
+  Variant(bool v) : boolean(v) {}
+  Variant(LoxyRef obj): obj(obj) {}
 
-    Obj *obj;
-  } as;
-
-  /// valuesEqual - checks whether [a] equals [b].
-  static bool valuesEqual(Value a, Value b);
-
-  /// hashValue - generates hash for [value]. [value] must be built-in
-  ///   immutable type.
-  ///   This method is modified from wren's hashValue:
-  ///   https://github.com/wren-lang/wren/blob/93dac9132773c5bc0bbe92df5ccbff14da9d25a6/src/vm/wren_value.c#L424
-  static uint32_t hashValue(Value value);
+  bool boolean;
+  double number;
+  LoxyRef obj;
 };
 
-/// Macros for determining types.
-#define IS_BOOL(value)    ((value).type == ValueType::Bool)
-#define IS_NIL(value)     ((value).type == ValueType::Nil)
-#define IS_NUMBER(value)  ((value).type == ValueType::Number)
-#define IS_OBJ(value)     ((value).type == ValueType::Obj)
-#define IS_UNDEF(value)   ((value).type == ValueType::Undef)
+class Value {
+private:
 
-// To avoid side-effects, like `IS_STRING(pop())`.
-#define IS_STRING(value)    Obj::isObjType(value, ObjType::String)
+  ValueType type;
+  Variant as;
 
-/// Macros for destructing values.
-#define AS_BOOL(value)    ((value).as.boolean)
-#define AS_NUMBER(value)  ((value).as.number)
-#define AS_OBJ(value)     ((value).as.obj)
-#define AS_STRING(value)  ((ObjString*)AS_OBJ((value)))
-#define AS_CSTRING(value)   (((ObjString*)AS_OBJ(value))->chars)
+public:
 
-/// Macros for consturcting values.
-#define BOOL_VAL(value)   ((Value){ ValueType::Bool, { .boolean = value } })
-#define NIL_VAL           ((Value){ ValueType::Nil, { .number = 0 } })
-#define NUMBER_VAL(value) ((Value){ ValueType::Number, { .number = value } })
-#define OBJ_VAL(value)    ((Value){ ValueType::Obj, { .obj = (Obj*)value } })
-#define UNDEF_VAL         ((Value){ ValueType::Undef, { .number = 0 } })
+  static const Value Nil;
+  static const Value Undef;
+  static const Value True;
+  static const Value False;
+
+  std::string toString() const;
+
+  uint32_t hash();
+
+  // helpers for determining [value] type.
+  bool isBool()   const { return type == ValueType::Bool; }
+  bool isNil()    const { return type == ValueType::Nil; }
+  bool isNumber() const { return type == ValueType::Number; }
+  bool isObj()    const { return type == ValueType::Obj; }
+  bool isUndef()  const { return type == ValueType::Undef; }
+
+  inline operator bool () const {
+    assert(type == ValueType::Bool);
+    return as.boolean;
+  }
+
+  inline operator double () const {
+    assert(type == ValueType::Number);
+    return as.number;
+  }
+
+  inline operator LoxyRef () const {
+    assert(type == ValueType::Obj);
+    return as.obj;
+  }
+
+  bool operator == (const Value &other) const {
+    if (type != other.type) return false;
+
+    switch (type) {
+    case ValueType::Bool:   return (bool)other == (bool)(*this);
+    case ValueType::Nil:    return true;
+    case ValueType::Undef:  return true;
+    case ValueType::Number: return (double)other == (double)(*this);
+    case ValueType::Obj:    return (LoxyRef)other == (LoxyRef)(*this);
+    }
+  }
+
+  bool operator != (const Value &other) const {
+    return !((*this) == other);
+  }
+
+  Value(ValueType type, Variant as) : type(type), as(as) {}
+
+  Value(double number);
+  Value(LoxyRef ref);
+};
 
 // Object representations.
 //
-// Note that we don't use inheretance since we can't avoid dynamic cast
-// in runtime. The reason for using C++ here, is to take advantage of the
-// enhancement on C. This might be disapointing.
 
-enum class ObjType {
-  String,
-  Module,
+typedef uint32_t Hash;
+typedef uint8_t* IPPtr;
+typedef std::map<LoxyString*, Value> SymbolTable;
+typedef std::map<Hash, LoxyString*> StringPool;
+
+// global string pool.
+StringPool stringPool;
+
+/// class LoxyObj - based object type inherited by every Loxy object.
+class LoxyObj {
+public:
+
+  bool    isDark;
+  LoxyRef next;
+
+  LoxyObj() : isDark(false), next(NULL) {}
 };
 
-/// struct Obj - general object type, contained by each Obj*.
-struct Obj {
-  ObjType type;
-  bool isDark;
-  Obj *next;
+/// LoxyString - string class.
+class LoxyString : public LoxyObj {
+private:
 
-  /// isObjType - checks if [value] contains an [Obj] of [type].
-  static bool isObjType(Value value, ObjType type);
+  const char *chars;
+  int length;
+  Hash _hash;
 
-  /// printObject - prints the object [value] contains.
-  static void printObject(Value value);
+  static Hash hashString(const char *s);
+
+public:
+  LoxyString(const char *chars, int length, Hash hash) :
+    chars(chars), length(length), _hash(hash) {}
+
+  Hash hash() const { return _hash; }
+
+  /// create - creates a loxy string object. if [take] is set to true,
+  ///   then [chars] will be owned by LoxyString instance.
+  static LoxyString *create(LoxyVM &vm, const char *chars, bool take = false);
 };
 
-/// struct ObjString - Loxy's string object.
-struct ObjString {
-  Obj obj;
-  size_t  length;
-  uint32_t  hash;
-  char    *chars;
-  
-  /// from - creates an ObjString from [chars]. If [take] is true, then
-  ///   the method does not duplicate from [chars].
-  static ObjString *from(const char *chars, int length, bool take = false);
+/// class LoxyModule - each loxy file is a module.
+class LoxyModule : public LoxyObj {
+private:
+
+  // the name of the module.
+  LoxyString *name;
+
+  // the chunk that contains bytecode.
+  Chunk *chunk;
+
+  // top-level variables.
+  SymbolTable globals;
+
+  /// local variables are stored directly on the stack.
+
+public:
+
+  // next instruction to be read.
+  IPPtr ip;
+
+  LoxyModule(Chunk *chunk, LoxyString *name) : name(name), chunk(chunk) {}
+
+  /// getGlobal - finds a top-level variable within this module
+  ///   if not found, returns false without setting [result].
+  bool getGlobal(LoxyString *name, Value *result);
 };
 
-/// struct ObjModule - represents loaded a Loxy's module.
-struct ObjModule {
-  Obj obj;
-
-  // The name of the module.
-  ObjString *name;
-
-  
-};
 
 };
 

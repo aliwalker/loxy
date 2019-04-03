@@ -20,6 +20,9 @@ public:
   /// Compile - compiles over [source].
   void Compile(const char *source, ObjModule &module);
   void markCompiler();
+
+public:
+  Chunk *compilingChunk;
 };
 
 };
