@@ -52,6 +52,7 @@ LoxyStringRef LoxyString::create(LoxyVM &vm, const char *chars, bool take) {
 
   // put it in pool.
   stringPool[hash] = ref;
+  return ref;
 }
 
 // class LoxyModule

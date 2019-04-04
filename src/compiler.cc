@@ -82,14 +82,18 @@ private:
 public:
   Scanner(const char *source = NULL) {
     initialized = source == NULL ? false : true;
-    Scanner::initScanner(*this, source);
+    if (!initialized) return;
+    init(source);
   }
 
   /// scanToken - scans a token on demand.
   Token scanToken();
 public:
-  /// initScanner - helper for initializing [scanner].
-  static void initScanner(Scanner &scanner, const char *source);
+
+  bool isInitialized() const { return initialized; }
+
+  /// init - helper for initializing [scanner].
+  void init(const char *source);
 };  // Scanner
 
 static bool isDigit(char c) {
@@ -102,11 +106,11 @@ static bool isAlpha(char c) {
             c == '_';
 }
 
-void Scanner::initScanner(Scanner &scanner, const char *source) {
+void Scanner::init(const char *source) {
   ASSERT(source != NULL, "source code for scanner initialization must not be NULL");
-  scanner.start = source;
-  scanner.current = source;
-  scanner.line = 1;
+  start = source;
+  current = source;
+  line = 1;
 }
 
 bool Scanner::isAtEnd() {
@@ -331,10 +335,11 @@ struct ParseRule {
 /// struct Local - represents local variables.
 struct Local {
   // The name token that contains source info.
-  Token &name;
+  Token *name = NULL;
 
   // The depth of the variable. Top-level variable has depth of 0.
-  int   depth;
+  // -1 means the name is being declared yet usable.
+  int   depth = -1;
 };
 
 /// struct Locals - a structrue for manipulating current local variables 
@@ -343,29 +348,35 @@ struct Locals {
   Local vars[UINT8_COUNT];
 
   // number of variables in [vars].
-  size_t count;
+  size_t count = 0;
 public:
+  Locals() {}
 
   /// addLocals - adds a local variable to underlying [vars].
-  void add(Token &name) {
+  void add(Token *name) {
     if (count == UINT8_COUNT) {
       // error("Too many local variables in function.");
       return;
     }
     Local &var = vars[count++];
     var.name = name;
-
-    // depth of -1 means declared but not ready for usage.
-    var.depth = -1;
   }
 
   Local &get(uint8_t index) {
     return vars[index];
   }
 
+  Local &back() {
+    return vars[count - 1];
+  }
+
+  void pop() {
+    count--;
+  }
+
   void set(uint8_t index, Token name) {
     Local &var = vars[index];
-    var.name = name;
+    var.name = &name;
   }
 
   void set(uint8_t index, int depth) {
@@ -378,26 +389,32 @@ public:
 ///   lexes, parses and emits for current function scope.
 class Parser {
   LoxyVM &vm;
+
   // scanner is a part of parser.
-  Scanner scanner;
-  Token current;
-  Token previous;
-  bool hadErorr;
-  bool panicMode;
+  Scanner scanner{};
+  Token current{};
+  Token previous{};
+  bool hadErorr = false;
+  bool panicMode = false;
 
   // a closure returning the chunk for current compilation.
-  Chunk &(*currentChunk)();
+  Chunk *_currentChunk = NULL;
 
-  Locals locals;
+  Locals locals{};
 
   // The current level of block scope nesting.
-  size_t scopeDepth;
+  size_t scopeDepth = 0;
 private:
   /// getRule - extracts rule from [rules] that matches [type].
   ParseRule &getRule(Tok type);
 
   /// makeConstant - adds [value] as constant to current compiling chunk.
   uint8_t makeConstant(Value value);
+
+  Chunk &currentChunk() {
+    ASSERT(_currentChunk != NULL, "Current chunk must not be NULL");
+    return *_currentChunk;
+  }
 
 private:
   // methods have to do with variables.
@@ -467,6 +484,7 @@ private:
 
   // helpers for updating internal parser states.
   //
+  void initParser(Chunk *chunk);
   void advance();
   void consume(Tok type, const char *msg);
   void endParser();
@@ -497,6 +515,26 @@ private:
 
 // parsers
 //
+Parser::Parser(LoxyVM &vm, const char *source): vm(vm) {
+  if (source != NULL) scanner.init(source);
+  hadErorr = false;
+  panicMode = false;
+}
+
+bool Parser::parse(Chunk &compilingChunk, const char *source) {
+  if (source != NULL) scanner.init(source);
+
+  initParser(&compilingChunk);
+  advance();
+
+  while (!match(Tok::_EOF)) {
+    declaration();
+  }
+
+  endParser();
+  return !hadErorr;
+}
+
 void Parser::declaration() {
   if (match(Tok::VAR)) {
     varDeclaration();
@@ -598,6 +636,16 @@ void Parser::parsePrecedence(Precedence prec) {
   }
 }
 
+uint8_t Parser::makeConstant(Value value) {
+  int constant = currentChunk().addConstant(value);
+
+  if (constant > UINT8_MAX) {
+    error("Too many constants in one chunk.");
+    return 0;
+  }
+  return (uint8_t)constant;
+}
+
 ParseRule &Parser::getRule(Tok type) {
   auto grouping = [this](bool canAssign) { this->grouping(); };
   auto binary = [this](bool canAssign) { this->binary(); };
@@ -672,6 +720,8 @@ void Parser::binary() {
   case Tok::MINUS:         emit(OpCode::SUBTRACT); break;
   case Tok::STAR:          emit(OpCode::MULTIPLY); break;
   case Tok::SLASH:         emit(OpCode::DIVIDE); break;
+  default:
+    UNREACHABLE();
   }
 }
 
@@ -681,6 +731,8 @@ void Parser::literal() {
   case Tok::FALSE:  emit(OpCode::FALSE);  break;
   case Tok::TRUE:   emit(OpCode::TRUE); break;
   case Tok::NIL:    emit(OpCode::NIL); break;
+  default:
+    UNREACHABLE();
   }
 }
 
@@ -737,6 +789,8 @@ void Parser::unary() {
   switch (operatorType) {
   case Tok::BANG: emit(OpCode::NOT); break;
   case Tok::MINUS: emit(OpCode::NEGATE); break;
+  default:
+    UNREACHABLE();
   }
 }
 
@@ -766,13 +820,28 @@ void Parser::synchronize() {
   }
 }
 
+void Parser::beginScope() {
+  scopeDepth++;
+}
+
+void Parser::endScope() {
+  scopeDepth--;
+
+  // emit bytecode for popping local variables.
+  while (locals.count > 0 &&
+        locals.back().depth > scopeDepth) {
+    emit(OpCode::POP);
+    locals.pop();
+  }
+}
+
 // variable related methods
 //
 
 int Parser::resolveLocal(Token &name) {
   for (uint8_t i = locals.count - 1; i >= 0; i--) {
     Local &local = locals.get(i);
-    if (identifiersEqual(local.name, name)) {
+    if (identifiersEqual(*local.name, name)) {
       if (local.depth == -1) {
         error("Cannot reference a local variable before it is initialized.");
       }
@@ -794,12 +863,12 @@ void Parser::declareVariable() {
 
     // ensure we've not fallen out of current scope.
     if (local.depth != -1 && local.depth < scopeDepth) break;
-    if (identifiersEqual(name, local.name)) {
+    if (identifiersEqual(name, *local.name)) {
       error("Variable with this name already declared in this scope.");
     }
   }
 
-  locals.add(name);
+  locals.add(&name);
 }
 
 void Parser::defineVariable(uint8_t global) {
@@ -835,6 +904,12 @@ void Parser::markInitialized() {
 
 // state updater
 //
+void Parser::initParser(Chunk *chunk) {
+  _currentChunk = chunk;
+  locals.count = 0;
+  scopeDepth = 0;
+}
+
 void Parser::advance() {
   previous = current;
 
