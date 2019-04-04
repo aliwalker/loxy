@@ -21,7 +21,7 @@ class Compiler {
 private:
 
   /// previous compiler.
-  CompilerRef parent = NULL;
+  CompilerRef parent = nullptr;
 
   ParserRef parser;
 
@@ -29,7 +29,7 @@ public:
   Compiler(LoxyVM &vm);
 
   /// Compile - compiles over [source].
-  void compile(const char *source, LoxyModule &module);
+  bool compile(const char *source, LoxyModule &module);
 
   CompilerRef getParent() const { return parent; }
 

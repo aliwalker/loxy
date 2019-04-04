@@ -64,7 +64,7 @@ public:
   int addConstant(Value value);
 
   /// getConstants - returns the constant value at [index].
-  Value getConstant(size_t index) const; //{ return constants[index]; }
+  Value getConstant(size_t index) const;
 
 public:
   static ChunkRef create() { return std::make_shared<Chunk>(); }

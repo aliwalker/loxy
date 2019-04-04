@@ -125,7 +125,7 @@ public:
   bool    isDark;
   LoxyObjRef next;
 
-  LoxyObj() : isDark(false), next(NULL) {}
+  LoxyObj() : isDark(false), next(nullptr) {}
 
 private:
   // all object allocation is guarded by vm.

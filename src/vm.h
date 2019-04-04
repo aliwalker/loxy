@@ -19,6 +19,7 @@ class LoxyObj;
 class LoxyString;
 class LoxyModule;
 
+typedef std::shared_ptr<Compiler> CompilerRef;
 typedef LoxyObj*  LoxyObjRef;
 typedef LoxyString* LoxyStringRef;
 typedef LoxyModule* LoxyModuleRef;
@@ -46,15 +47,14 @@ public:
   template<typename T, typename TRef>
   TRef newObject();
 
+  InterpretResult run();
+
 public:
 
   // currently compiling compiler.
-  std::shared_ptr<Compiler> compiler = NULL;
+  std::shared_ptr<Compiler> compiler = nullptr;
 
-  // loaded modules.
-  std::vector<LoxyModule*> modules;
-
-  // module that's currently executing.
+  // a linked list of modules loaded.
   LoxyModule *currModule;
 
   // offset in the currModule's chunk.
@@ -67,7 +67,7 @@ public:
   std::set<LoxyString*, bool> strings;
 
   // A linked-list of allocated objects.
-  LoxyObjRef first = NULL;
+  LoxyObjRef first = nullptr;
 
 private:
 
@@ -83,7 +83,7 @@ TRef LoxyVM::newObject() {
   static_assert(std::is_base_of<LoxyObj, T>::value, "type for creation isn't derived from LoxyObj");
 
   size_t size = sizeof(T);
-  TRef ref = (TRef)realloc(NULL, size);
+  TRef ref = (TRef)realloc(nullptr, size);
 
   allocatedBytes += size;
   ref->next = first;

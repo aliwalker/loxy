@@ -80,8 +80,8 @@ private:
   Token number();
   Token string();
 public:
-  Scanner(const char *source = NULL) {
-    initialized = source == NULL ? false : true;
+  Scanner(const char *source = nullptr) {
+    initialized = source == nullptr ? false : true;
     if (!initialized) return;
     init(source);
   }
@@ -107,7 +107,7 @@ static bool isAlpha(char c) {
 }
 
 void Scanner::init(const char *source) {
-  ASSERT(source != NULL, "source code for scanner initialization must not be NULL");
+  ASSERT(source != nullptr, "source code for scanner initialization must not be nullptr");
   start = source;
   current = source;
   line = 1;
@@ -335,7 +335,7 @@ struct ParseRule {
 /// struct Local - represents local variables.
 struct Local {
   // The name token that contains source info.
-  Token *name = NULL;
+  Token *name = nullptr;
 
   // The depth of the variable. Top-level variable has depth of 0.
   // -1 means the name is being declared yet usable.
@@ -398,7 +398,7 @@ class Parser {
   bool panicMode = false;
 
   // a closure returning the chunk for current compilation.
-  Chunk *_currentChunk = NULL;
+  Chunk *_currentChunk = nullptr;
 
   Locals locals{};
 
@@ -412,7 +412,7 @@ private:
   uint8_t makeConstant(Value value);
 
   Chunk &currentChunk() {
-    ASSERT(_currentChunk != NULL, "Current chunk must not be NULL");
+    ASSERT(_currentChunk != nullptr, "Current chunk must not be nullptr");
     return *_currentChunk;
   }
 
@@ -447,12 +447,12 @@ private:
   void markInitialized();
 public:
   /// Parser - takes [source] as source code & initializes
-  ///   internal states. Source can be NULL for convenience.
-  Parser(LoxyVM &vm, const char *source = NULL);
+  ///   internal states. Source can be nullptr for convenience.
+  Parser(LoxyVM &vm, const char *source = nullptr);
 
   /// parse - main interface for parsing [source] code and emitting
   ///   corresponding bytecode to [compilingChunk].
-  bool parse(Chunk &compilingChunk, const char *source = NULL);
+  bool parse(Chunk &compilingChunk, const char *source = nullptr);
 
 private:
   // Top-down parsers for statements.
@@ -516,13 +516,13 @@ private:
 // parsers
 //
 Parser::Parser(LoxyVM &vm, const char *source): vm(vm) {
-  if (source != NULL) scanner.init(source);
+  if (source != nullptr) scanner.init(source);
   hadErorr = false;
   panicMode = false;
 }
 
 bool Parser::parse(Chunk &compilingChunk, const char *source) {
-  if (source != NULL) scanner.init(source);
+  if (source != nullptr) scanner.init(source);
 
   initParser(&compilingChunk);
   advance();
@@ -613,7 +613,7 @@ void Parser::parsePrecedence(Precedence prec) {
   // Consumes the starting token.
   advance();
   ParseFn prefixRule = getRule(previous.type).prefix;
-  if (prefixRule == NULL) {
+  if (prefixRule == nullptr) {
     error("Expect expression.");
     return;
   }
@@ -657,46 +657,46 @@ ParseRule &Parser::getRule(Tok type) {
 
   // The driver of pratt-parsing.
   static ParseRule rules[] = {
-    { grouping, NULL,    Precedence::CALL },       // TOKEN_LEFT_PAREN
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_RIGHT_PAREN
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_LEFT_BRACE
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_RIGHT_BRACE
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_COMMA
-    { NULL,     NULL,    Precedence::CALL },       // TOKEN_DOT
-    { unary,    binary,  Precedence::TERM },       // TOKEN_MINUS
-    { NULL,     binary,  Precedence::TERM },       // TOKEN_PLUS
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_SEMICOLON
-    { NULL,     binary,  Precedence::FACTOR },     // TOKEN_SLASH
-    { NULL,     binary,  Precedence::FACTOR },     // TOKEN_STAR
-    { unary,    NULL,    Precedence::NONE },       // TOKEN_BANG
-    { NULL,     binary,  Precedence::EQUALITY },   // TOKEN_BANG_EQUAL
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_EQUAL
-    { NULL,     binary,  Precedence::EQUALITY },   // TOKEN_EQUAL_EQUAL
-    { NULL,     binary,  Precedence::COMPARISON }, // TOKEN_GREATER
-    { NULL,     binary,  Precedence::COMPARISON }, // TOKEN_GREATER_EQUAL
-    { NULL,     binary,  Precedence::COMPARISON }, // TOKEN_LESS
-    { NULL,     binary,  Precedence::COMPARISON }, // TOKEN_LESS_EQUAL
-    { variable, NULL,    Precedence::NONE },       // TOKEN_IDENTIFIER
-    { string,   NULL,    Precedence::NONE },       // TOKEN_STRING
-    { number,   NULL,    Precedence::NONE },       // TOKEN_NUMBER
-    { NULL,     NULL,    Precedence::AND },        // TOKEN_AND
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_CLASS
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_ELSE
-    { literal,  NULL,    Precedence::NONE },       // TOKEN_FALSE
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_FOR
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_FUN
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_IF
-    { literal,  NULL,    Precedence::NONE },       // TOKEN_NIL
-    { NULL,     NULL,    Precedence::OR },         // TOKEN_OR
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_PRINT
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_RETURN
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_SUPER
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_THIS
-    { literal,  NULL,    Precedence::NONE },       // TOKEN_TRUE
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_VAR
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_WHILE
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_ERROR
-    { NULL,     NULL,    Precedence::NONE },       // TOKEN_EOF
+    { grouping,    nullptr,    Precedence::CALL },       // TOKEN_LEFT_PAREN
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RIGHT_PAREN
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_LEFT_BRACE
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RIGHT_BRACE
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_COMMA
+    { nullptr,     nullptr,    Precedence::CALL },       // TOKEN_DOT
+    { unary,       binary,     Precedence::TERM },       // TOKEN_MINUS
+    { nullptr,     binary,     Precedence::TERM },       // TOKEN_PLUS
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_SEMICOLON
+    { nullptr,     binary,     Precedence::FACTOR },     // TOKEN_SLASH
+    { nullptr,     binary,     Precedence::FACTOR },     // TOKEN_STAR
+    { unary,       nullptr,    Precedence::NONE },       // TOKEN_BANG
+    { nullptr,     binary,     Precedence::EQUALITY },   // TOKEN_BANG_EQUAL
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_EQUAL
+    { nullptr,     binary,     Precedence::EQUALITY },   // TOKEN_EQUAL_EQUAL
+    { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_GREATER
+    { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_GREATER_EQUAL
+    { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS
+    { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS_EQUAL
+    { variable,    nullptr,    Precedence::NONE },       // TOKEN_IDENTIFIER
+    { string,      nullptr,    Precedence::NONE },       // TOKEN_STRING
+    { number,      nullptr,    Precedence::NONE },       // TOKEN_NUMBER
+    { nullptr,     nullptr,    Precedence::AND },        // TOKEN_AND
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_CLASS
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_ELSE
+    { literal,     nullptr,    Precedence::NONE },       // TOKEN_FALSE
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_FOR
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_FUN
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_IF
+    { literal,     nullptr,    Precedence::NONE },       // TOKEN_NIL
+    { nullptr,     nullptr,    Precedence::OR },         // TOKEN_OR
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_PRINT
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RETURN
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_SUPER
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_THIS
+    { literal,     nullptr,    Precedence::NONE },       // TOKEN_TRUE
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_VAR
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_WHILE
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_ERROR
+    { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_EOF
   };
 
   return rules[static_cast<int>(type)];
@@ -738,7 +738,7 @@ void Parser::literal() {
 
 // prefix for Tok::NUMBER.
 void Parser::number() {
-  double value = strtod(previous.start, NULL);
+  double value = strtod(previous.start, nullptr);
   emitConstant(Value(value));
 }
 
@@ -999,8 +999,8 @@ Compiler::Compiler(LoxyVM &vm) {
   parser = std::make_unique<Parser>(vm);
 }
 
-void Compiler::compile(const char *source, LoxyModule &module) {
-  parser->parse(*module.getChunk(), source);
+bool Compiler::compile(const char *source, LoxyModule &module) {
+  return parser->parse(*module.getChunk(), source);
 }
 
 CompilerRef Compiler::create(LoxyVM &vm) { return std::make_shared<Compiler>(vm); }
