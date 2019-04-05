@@ -44,8 +44,8 @@ public:
 
   // gc related methods.
   //
-  template<typename T, typename TRef>
-  TRef newObject();
+  /// newObject - allocates memory for object of type [T]. 
+  void *newObject(size_t size);
 
   InterpretResult run();
 
@@ -77,19 +77,6 @@ private:
   Value readConstant();
   LoxyString *readString();
 };
-
-template<typename T, typename TRef>
-TRef LoxyVM::newObject() {
-  static_assert(std::is_base_of<LoxyObj, T>::value, "type for creation isn't derived from LoxyObj");
-
-  size_t size = sizeof(T);
-  TRef ref = (TRef)realloc(nullptr, size);
-
-  allocatedBytes += size;
-  ref->next = first;
-  first = ref;
-  return ref;
-}
 
 } // namespace loxy
 

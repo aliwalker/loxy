@@ -30,7 +30,7 @@ Hash LoxyString::hashString(const char *chars) {
   return _hash;
 }
 
-LoxyStringRef LoxyString::create(LoxyVM &vm, const char *chars, bool take) {
+LoxyStringRef LoxyString::create(LoxyVM &vm, const char *chars) {
   Hash hash = hashString(chars);
   auto s = stringPool.find(hash);
 
@@ -39,16 +39,10 @@ LoxyStringRef LoxyString::create(LoxyVM &vm, const char *chars, bool take) {
     return s->second;
   }
 
-  LoxyStringRef ref = vm.newObject<LoxyString, LoxyStringRef>();
-
-  if (take) {
-    ref->chars = chars;
-  } else {
-    ref->chars = strdup(chars);
-  }
-
-  ref->length = strlen(chars);
-  ref->_hash = hash;
+  // allocate memory for this object.
+  auto mem = vm.newObject(sizeof(LoxyString));
+  std::unique_ptr<char> dupChars {strdup(chars)};
+  auto ref = ::new(mem) LoxyString(std::move(dupChars), strlen(chars), hash);
 
   // put it in pool.
   stringPool[hash] = ref;
@@ -72,11 +66,10 @@ LoxyModuleRef LoxyModule::create(LoxyVM &vm, const char *name) {
   auto modName = LoxyString::create(vm, name);
   auto chunk = Chunk::create();
 
-  auto mod = vm.newObject<LoxyModule, LoxyModuleRef>();
-  mod->chunk = chunk;
-  mod->name = modName;
+  auto mem = vm.newObject(sizeof(LoxyModule));
+  auto module = ::new LoxyModule(modName, chunk);
 
-  return mod;
+  return module;
 }
 
 } // namespace loxy

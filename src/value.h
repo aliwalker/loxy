@@ -109,9 +109,10 @@ public:
 
 // Object representations.
 //
+// Objects are garbage collected, while resources used by compiler are
+// managed smart pointers.
 
 typedef uint32_t Hash;
-typedef uint8_t* IPPtr;
 typedef std::map<LoxyStringRef, Value> SymbolTable;
 typedef std::map<Hash, LoxyStringRef> StringPool;
 
@@ -128,30 +129,44 @@ public:
   LoxyObj() : isDark(false), next(nullptr) {}
 
 private:
-  // all object allocation is guarded by vm.
+  // object allocations should be prevented.
   void * operator new   (size_t) = delete;
   void * operator new[] (size_t) = delete;
   void   operator delete   (void *) = delete;
   void   operator delete[] (void*) = delete;
+
+  // avoid copy.
+  LoxyObj(const LoxyObj&) = delete;
+  LoxyObj& operator=(const LoxyObj &) = delete;
 };
 
 /// LoxyString - string class.
 class LoxyString : public LoxyObj {
 private:
 
-  const char *chars;
+  // auto managed chars.
+  std::unique_ptr<char> chars;
   int length;
-  Hash _hash;
+  Hash hash_;
 
   static Hash hashString(const char *s);
 
 public:
 
-  Hash hash() const { return _hash; }
+  LoxyString(std::unique_ptr<char> chars, int length, Hash hash) :
+    chars(std::move(chars)), length(length), hash_(hash) {}
 
-  /// create - creates a loxy string object. if [take] is set to true,
-  ///   then [chars] will be owned by LoxyString instance.
-  static LoxyString *create(LoxyVM &vm, const char *chars, bool take = false);
+  Hash hash() const { return hash_; }
+
+  bool operator== (const LoxyString &other) {
+    // since we've interned strings, equality can be compared by 
+    // identity.
+    return other.chars == chars;
+  }
+
+  /// create - called by VM. creates a loxy string object. 
+  ///   [chars] will not be owned by LoxyString.
+  static LoxyStringRef create(LoxyVM &vm, const char *chars);
 };
 
 /// class LoxyModule - each loxy file is a module.
@@ -170,6 +185,9 @@ private:
   // local variables are stored directly on the stack.
 
 public:
+
+  LoxyModule(LoxyStringRef name, ChunkRef chunk)
+    : name(name), chunk(chunk) {}
 
   ChunkRef getChunk() const { return chunk; }
   void setChunk(ChunkRef c) { chunk = c; }

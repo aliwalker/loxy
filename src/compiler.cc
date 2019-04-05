@@ -748,7 +748,7 @@ void Parser::string() {
 
   char *chars = strdup(previous.start + 1);
   chars[strlen(chars) - 1] = '\0';
-  LoxyObjRef s = LoxyString::create(vm, chars, true);
+  LoxyObjRef s = LoxyString::create(vm, chars);
 
   emitConstant(Value(s));
 }

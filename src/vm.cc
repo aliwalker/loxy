@@ -27,6 +27,16 @@ InterpretResult LoxyVM::interpret(const char *source, const char *module) {
   return run();
 }
 
+void *LoxyVM::newObject(size_t size) {
+  LoxyObjRef obj = reinterpret_cast<LoxyObjRef>(realloc(nullptr, size));
+
+  allocatedBytes += size;
+  obj->next = first;
+  first = obj;
+
+  return reinterpret_cast<void*>(obj);
+}
+
 void LoxyVM::runtimeError(const char *format, ...) {
 
 }
