@@ -47,12 +47,10 @@ public:
   /// newObject - allocates memory for object of type [T]. 
   void *newObject(size_t size);
 
+  /// run - runs currModule.
   InterpretResult run();
 
 public:
-
-  // currently compiling compiler.
-  std::shared_ptr<Compiler> compiler = nullptr;
 
   // a linked list of modules loaded.
   LoxyModule *currModule;
@@ -73,9 +71,13 @@ private:
 
   void runtimeError(const char *format, ...);
 
+  // helpers for reading from currModule's chunk.
+  //
   uint8_t readByte();
   Value readConstant();
-  LoxyString *readString();
+  LoxyStringRef readString();
+
+  Value peek(int distance);
 };
 
 } // namespace loxy

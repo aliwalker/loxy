@@ -62,6 +62,18 @@ bool LoxyModule::getGlobal(LoxyStringRef name, Value *result) {
   return true;
 }
 
+bool LoxyModule::setGlobal(LoxyStringRef name, Value value) {
+  bool newKey = true;
+
+  if (globals.find(name) == globals.end()) {
+    newKey = false;
+  }
+
+  auto pair = std::make_pair(name, value);
+  globals.insert(pair);
+  return newKey;
+}
+
 LoxyModuleRef LoxyModule::create(LoxyVM &vm, const char *name) {
   auto modName = LoxyString::create(vm, name);
   auto chunk = Chunk::create();

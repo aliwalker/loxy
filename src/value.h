@@ -65,9 +65,9 @@ public:
   // helpers for determining [value] type.
   bool isBool()   const { return type == ValueType::Bool; }
   bool isNil()    const { return type == ValueType::Nil; }
+  bool isUndef()  const { return type == ValueType::Undef; }
   bool isNumber() const { return type == ValueType::Number; }
   bool isObj()    const { return type == ValueType::Obj; }
-  bool isUndef()  const { return type == ValueType::Undef; }
 
   inline operator bool () const {
     assert(type == ValueType::Bool);
@@ -102,7 +102,6 @@ public:
 
   Value(ValueType type, Variant as) : type(type), as(as) {}
 
-  Value(bool isTrue);
   Value(double number);
   Value(LoxyObjRef ref);
 };
@@ -164,6 +163,8 @@ public:
     return other.chars == chars;
   }
 
+  operator char*() { return chars.get(); }
+
   /// create - called by VM. creates a loxy string object. 
   ///   [chars] will not be owned by LoxyString.
   static LoxyStringRef create(LoxyVM &vm, const char *chars);
@@ -200,6 +201,9 @@ public:
   /// getGlobal - finds a top-level variable within this module
   ///   if not found, returns false without setting [result].
   bool getGlobal(LoxyStringRef name, Value *result);
+
+  /// setGlobal - sets a top-level variable within this module.
+  bool setGlobal(LoxyStringRef name, Value value);
 
   static LoxyModuleRef create(LoxyVM &vm, const char *name);
 };

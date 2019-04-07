@@ -13,29 +13,11 @@ class LoxyVM;
 class Parser;
 class LoxyModule;
 
-typedef std::shared_ptr<Compiler> CompilerRef;
-typedef std::unique_ptr<Parser> ParserRef;
-
-/// class Compiler - the compiler class for Loxy.
 class Compiler {
-private:
-
-  /// previous compiler.
-  CompilerRef parent = nullptr;
-
-  ParserRef parser;
-
 public:
-  Compiler(LoxyVM &vm);
 
-  /// Compile - compiles over [source].
-  bool compile(const char *source, LoxyModule &module);
-
-  CompilerRef getParent() const { return parent; }
-
-  void setParent(CompilerRef _compiler) { parent = _compiler; }
-
-  static CompilerRef create(LoxyVM &vm);
+  /// compileModule - compiles [source] in the context of [module].
+  static bool compileModule(LoxyVM &vm, const char *source, LoxyModule &module);
 };
 
 } // namespace loxy

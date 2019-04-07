@@ -390,8 +390,8 @@ public:
 class Parser {
   LoxyVM &vm;
 
-  // scanner is a part of parser.
-  Scanner scanner{};
+  // from which Parser pulls token out.
+  Scanner &scanner;
   Token current{};
   Token previous{};
   bool hadErorr = false;
@@ -448,11 +448,11 @@ private:
 public:
   /// Parser - takes [source] as source code & initializes
   ///   internal states. Source can be nullptr for convenience.
-  Parser(LoxyVM &vm, const char *source = nullptr);
+  Parser(LoxyVM &vm, Scanner &scanner);
 
   /// parse - main interface for parsing [source] code and emitting
   ///   corresponding bytecode to [compilingChunk].
-  bool parse(Chunk &compilingChunk, const char *source = nullptr);
+  bool parse(Chunk &compilingChunk, const char *source);
 
 private:
   // Top-down parsers for statements.
@@ -515,14 +515,14 @@ private:
 
 // parsers
 //
-Parser::Parser(LoxyVM &vm, const char *source): vm(vm) {
-  if (source != nullptr) scanner.init(source);
+Parser::Parser(LoxyVM &vm, Scanner &scanner): vm(vm), scanner(scanner) {
   hadErorr = false;
   panicMode = false;
 }
 
 bool Parser::parse(Chunk &compilingChunk, const char *source) {
-  if (source != nullptr) scanner.init(source);
+  ASSERT(source != nullptr, "source must not be null");
+  scanner.init(source);
 
   initParser(&compilingChunk);
   advance();
@@ -879,7 +879,7 @@ void Parser::defineVariable(uint8_t global) {
     return;
   }
 
-  // TODO: remove this when we introduce module.
+  // global variables are variables defined in top-level of a module.
   emit(OpCode::DEFINE_GLOBAL);
   emit(global);
 }
@@ -994,15 +994,11 @@ void Parser::errorAt(const Token &token, const char *msg) {
   hadErorr = true;
 }
 
-// class Compiler
-Compiler::Compiler(LoxyVM &vm) {
-  parser = std::make_unique<Parser>(vm);
-}
+bool Compiler::compileModule(LoxyVM &vm, const char *source, LoxyModule &module) {
+  Scanner scanner(source);
+  Parser parser(vm, scanner);
 
-bool Compiler::compile(const char *source, LoxyModule &module) {
-  return parser->parse(*module.getChunk(), source);
+  return parser.parse(*module.getChunk(), source);
 }
-
-CompilerRef Compiler::create(LoxyVM &vm) { return std::make_shared<Compiler>(vm); }
 
 } // namespace loxy
