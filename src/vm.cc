@@ -1,7 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <iostream>
 #include "common.h"
 #include "compiler.h"
 #include "value.h"
@@ -11,6 +11,7 @@ namespace loxy {
 
 uint8_t LoxyVM::readByte() {
   auto chunk = currModule->getChunk();
+  offset++;
   return chunk->read(offset);
 }
 
@@ -165,6 +166,7 @@ InterpretResult LoxyVM::run() {
     default:  UNREACHABLE();
     }
   }
+  std::cout << "OK" << std::endl;
 }
 
 void *LoxyVM::newObject(size_t size) {

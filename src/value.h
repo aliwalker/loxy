@@ -1,4 +1,5 @@
 /// value.h - defines memory representation of Loxy primitives/objects.
+#pragma once
 #ifndef loxy_value_h
 #define loxy_value_h
 
@@ -17,10 +18,12 @@ class Chunk;
 class Object;
 class String;
 class Module;
+class LoxyVM;
 
 typedef Object*  ObjectRef;
 typedef String* StringRef;
 typedef Module* ModuleRef;
+typedef std::shared_ptr<Chunk> ChunkRef;
 
 // Value representation.
 
@@ -122,8 +125,8 @@ typedef uint32_t Hash;
 typedef std::map<StringRef, Value> SymbolTable;
 typedef std::map<Hash, StringRef> StringPool;
 
-// global string pool.
-StringPool stringPool;
+// // global string pool.
+// StringPool stringPool;
 
 /// class Object - based object type inherited by every Loxy object.
 class Object {

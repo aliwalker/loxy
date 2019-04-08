@@ -6,6 +6,9 @@
 
 namespace loxy {
 
+// global string pool.
+StringPool stringPool;
+
 // class Value
 //
 Value::Value(double number) : type(ValueType::Number), as(number) {}

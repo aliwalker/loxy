@@ -1,3 +1,4 @@
+#include <cassert>
 #include <iostream>
 #include <functional>
 #include <memory>
@@ -107,7 +108,7 @@ static bool isAlpha(char c) {
 }
 
 void Scanner::init(const char *source) {
-  ASSERT(source != nullptr, "source code for scanner initialization must not be nullptr");
+  assert(source != nullptr && "source code for scanner initialization must not be nullptr");
   start = source;
   current = source;
   line = 1;
@@ -412,7 +413,7 @@ private:
   uint8_t makeConstant(Value value);
 
   Chunk &currentChunk() {
-    ASSERT(_currentChunk != nullptr, "Current chunk must not be nullptr");
+    assert(_currentChunk != nullptr && "Current chunk must not be nullptr");
     return *_currentChunk;
   }
 
@@ -521,7 +522,7 @@ Parser::Parser(LoxyVM &vm, Scanner &scanner): vm(vm), scanner(scanner) {
 }
 
 bool Parser::parse(Chunk &compilingChunk, const char *source) {
-  ASSERT(source != nullptr, "source must not be null");
+  assert(source != nullptr && "source must not be null");
   scanner.init(source);
 
   initParser(&compilingChunk);

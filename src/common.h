@@ -4,6 +4,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <cassert>
 
 #define UINT8_COUNT (UINT8_MAX + 1)
 #define HEAP_GROW_PERCENT   0.5
@@ -19,24 +20,11 @@
   #define DEBUG_TRACE_GC
 
   #include <stdio.h>
-  #define ASSERT(condition, message) \
-      do \
-      { \
-        if (!(condition)) \
-        { \
-          fprintf(stderr, "[%s:%d] Assert failed in %s(): %s\n", \
-              __FILE__, __LINE__, __func__, message); \
-          abort(); \
-        } \
-      } \
-      while(0)
 
   #define UNREACHABLE() \
       do \
       { \
-        fprintf(stderr, "[%s:%d] This code should not be reached in %s()\n", \
-            __FILE__, __LINE__, __func__); \
-        abort(); \
+        assert(false && "reached unreachable!"); \
       } \
       while (0)
   

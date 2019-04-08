@@ -1,7 +1,6 @@
 #ifndef loxy_vm_h
 #define loxy_vm_h
 
-#include <map>
 #include <set>
 #include <vector>
 
