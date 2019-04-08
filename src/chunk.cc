@@ -20,6 +20,8 @@ int Chunk::addConstant(Value value) {
   return constants.size() - 1;
 }
 
-Value Chunk::getConstant(size_t index) const { return constants[index]; }
+Value Chunk::getConstant(size_t index) const {
+  return constants[index];
+}
 
 } // namespace loxy.

@@ -748,7 +748,7 @@ void Parser::string() {
 
   char *chars = strdup(previous.start + 1);
   chars[strlen(chars) - 1] = '\0';
-  LoxyObjRef s = LoxyString::create(vm, chars);
+  ObjectRef s = String::create(vm, chars);
 
   emitConstant(Value(s));
 }
@@ -885,7 +885,7 @@ void Parser::defineVariable(uint8_t global) {
 }
 
 uint8_t Parser::identifierConstant(Token &name) {
-  auto nameChars = LoxyString::create(vm, name.start);
+  auto nameChars = String::create(vm, name.start);
   return makeConstant(Value(nameChars));
 }
 
@@ -994,7 +994,7 @@ void Parser::errorAt(const Token &token, const char *msg) {
   hadErorr = true;
 }
 
-bool Compiler::compileModule(LoxyVM &vm, const char *source, LoxyModule &module) {
+bool Compiler::compileModule(LoxyVM &vm, const char *source, Module &module) {
   Scanner scanner(source);
   Parser parser(vm, scanner);
 

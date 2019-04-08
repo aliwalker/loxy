@@ -20,9 +20,9 @@ Value LoxyVM::readConstant() {
   return chunk->getConstant(constIndx);
 }
 
-LoxyStringRef LoxyVM::readString() {
-  auto value = (LoxyObjRef)readConstant();
-  return static_cast<LoxyStringRef>(value);
+StringRef LoxyVM::readString() {
+  auto value = (ObjectRef)readConstant();
+  return static_cast<String*>(value);
 }
 
 Value LoxyVM::peek(int distance) {
@@ -30,10 +30,10 @@ Value LoxyVM::peek(int distance) {
 }
 
 InterpretResult LoxyVM::interpret(const char *source, const char *module) {
-  auto mod = LoxyModule::create(*this, module);
+  auto mod = Module::create(*this, module);
 
   if (!(Compiler::compileModule(*this, source, *mod))) {
-    currModule = static_cast<LoxyModuleRef>(currModule->next);
+    currModule = static_cast<Module*>(currModule->next);
     return InterpretResult::Compile_Error;
   }
   
@@ -85,7 +85,7 @@ InterpretResult LoxyVM::run() {
     }
 
     case OpCode::GET_GLOBAL: {
-      LoxyStringRef name = readString();
+      StringRef name = readString();
       Value value{false};
       if (currModule->getGlobal(name, &value)) {
         runtimeError("Undefined variable '%s'.", (char*)name);
@@ -96,7 +96,7 @@ InterpretResult LoxyVM::run() {
     }
 
     case OpCode::SET_GLOBAL: {
-      LoxyStringRef name = readString();
+      StringRef name = readString();
       Value value = peek(0);
       if (!currModule->setGlobal(name, value)) {
         runtimeError("Undefined variable '%s'.", (char*)name);
@@ -105,7 +105,7 @@ InterpretResult LoxyVM::run() {
     }
 
     case OpCode::DEFINE_GLOBAL: {
-      LoxyStringRef name = readString();
+      StringRef name = readString();
       Value value = peek(0);
       currModule->setGlobal(name, value);
       stack.pop_back();
@@ -168,7 +168,7 @@ InterpretResult LoxyVM::run() {
 }
 
 void *LoxyVM::newObject(size_t size) {
-  LoxyObjRef obj = reinterpret_cast<LoxyObjRef>(realloc(nullptr, size));
+  ObjectRef obj = reinterpret_cast<ObjectRef>(realloc(nullptr, size));
 
   allocatedBytes += size;
   obj->next = first;

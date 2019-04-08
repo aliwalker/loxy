@@ -9,16 +9,16 @@ namespace loxy {
 // class Value
 //
 Value::Value(double number) : type(ValueType::Number), as(number) {}
-Value::Value(LoxyObjRef ref) : type(ValueType::Obj), as(ref) {}
+Value::Value(Object* ref) : type(ValueType::Obj), as(ref) {}
 
 const Value Value::Nil(ValueType::Nil, Variant((double)0));
 const Value Value::Undef(ValueType::Undef, Variant((double)0));
 const Value Value::True(ValueType::Bool, Variant(true));
 const Value Value::False(ValueType::Bool, Variant(false));
 
-// class LoxyString
+// class String
 //
-Hash LoxyString::hashString(const char *chars) {
+Hash String::hashString(const char *chars) {
   int length = strlen(chars);
   Hash _hash = 2166136261u;
 
@@ -30,7 +30,7 @@ Hash LoxyString::hashString(const char *chars) {
   return _hash;
 }
 
-LoxyStringRef LoxyString::create(LoxyVM &vm, const char *chars) {
+StringRef String::create(LoxyVM &vm, const char *chars) {
   Hash hash = hashString(chars);
   auto s = stringPool.find(hash);
 
@@ -40,18 +40,18 @@ LoxyStringRef LoxyString::create(LoxyVM &vm, const char *chars) {
   }
 
   // allocate memory for this object.
-  auto mem = vm.newObject(sizeof(LoxyString));
+  auto mem = vm.newObject(sizeof(String));
   std::unique_ptr<char> dupChars {strdup(chars)};
-  auto ref = ::new(mem) LoxyString(std::move(dupChars), strlen(chars), hash);
+  auto ref = ::new(mem) String(std::move(dupChars), strlen(chars), hash);
 
   // put it in pool.
   stringPool[hash] = ref;
   return ref;
 }
 
-// class LoxyModule
+// class Module
 //
-bool LoxyModule::getGlobal(LoxyStringRef name, Value *result) {
+bool Module::getGlobal(StringRef name, Value *result) {
   auto global = globals.find(name);
 
   if (global == globals.end()) {
@@ -62,7 +62,7 @@ bool LoxyModule::getGlobal(LoxyStringRef name, Value *result) {
   return true;
 }
 
-bool LoxyModule::setGlobal(LoxyStringRef name, Value value) {
+bool Module::setGlobal(StringRef name, Value value) {
   bool newKey = true;
 
   if (globals.find(name) == globals.end()) {
@@ -74,12 +74,12 @@ bool LoxyModule::setGlobal(LoxyStringRef name, Value value) {
   return newKey;
 }
 
-LoxyModuleRef LoxyModule::create(LoxyVM &vm, const char *name) {
-  auto modName = LoxyString::create(vm, name);
+ModuleRef Module::create(LoxyVM &vm, const char *name) {
+  auto modName = String::create(vm, name);
   auto chunk = Chunk::create();
 
-  auto mem = vm.newObject(sizeof(LoxyModule));
-  auto module = ::new LoxyModule(modName, chunk);
+  auto mem = vm.newObject(sizeof(Module));
+  auto module = ::new Module(modName, chunk);
 
   return module;
 }

@@ -15,14 +15,14 @@ namespace loxy {
 class Chunk;
 class Compiler;
 class Value;
-class LoxyObj;
-class LoxyString;
-class LoxyModule;
+class Object;
+class String;
+class Module;
 
 typedef std::shared_ptr<Compiler> CompilerRef;
-typedef LoxyObj*  LoxyObjRef;
-typedef LoxyString* LoxyStringRef;
-typedef LoxyModule* LoxyModuleRef;
+typedef Object* ObjectRef;
+typedef String* StringRef;
+typedef Module* ModuleRef;
 typedef std::shared_ptr<Chunk> ChunkRef;
 
 enum class InterpretResult {
@@ -53,7 +53,7 @@ public:
 public:
 
   // a linked list of modules loaded.
-  LoxyModule *currModule;
+  Module *currModule;
 
   // offset in the currModule's chunk.
   size_t offset = 0;
@@ -62,10 +62,10 @@ public:
   std::vector<Value> stack;
 
   // interned strings.
-  std::set<LoxyString*, bool> strings;
+  std::set<StringRef, bool> strings;
 
   // A linked-list of allocated objects.
-  LoxyObjRef first = nullptr;
+  ObjectRef first = nullptr;
 
 private:
 
@@ -75,7 +75,7 @@ private:
   //
   uint8_t readByte();
   Value readConstant();
-  LoxyStringRef readString();
+  StringRef readString();
 
   Value peek(int distance);
 };

@@ -14,13 +14,13 @@
 namespace loxy {
 
 class Chunk;
-class LoxyObj;
-class LoxyString;
-class LoxyModule;
+class Object;
+class String;
+class Module;
 
-typedef LoxyObj*  LoxyObjRef;
-typedef LoxyString* LoxyStringRef;
-typedef LoxyModule* LoxyModuleRef;
+typedef Object*  ObjectRef;
+typedef String* StringRef;
+typedef Module* ModuleRef;
 
 // Value representation.
 
@@ -30,6 +30,8 @@ enum class ValueType {
   Nil,
   Number,
   Obj,
+  String,
+  Module,
 
   // Used internally.
   Undef,
@@ -38,11 +40,11 @@ enum class ValueType {
 union Variant {
   Variant(double n) : number(n) {}
   Variant(bool v) : boolean(v) {}
-  Variant(LoxyObjRef obj): obj(obj) {}
+  Variant(Object *obj): obj(obj) {}
 
   bool boolean;
   double number;
-  LoxyObjRef obj;
+  Object* obj;
 };
 
 class Value {
@@ -68,6 +70,8 @@ public:
   bool isUndef()  const { return type == ValueType::Undef; }
   bool isNumber() const { return type == ValueType::Number; }
   bool isObj()    const { return type == ValueType::Obj; }
+  bool isString() const { return type == ValueType::String; }
+  bool isModule() const { return type == ValueType::Module; }
 
   inline operator bool () const {
     assert(type == ValueType::Bool);
@@ -79,7 +83,7 @@ public:
     return as.number;
   }
 
-  inline operator LoxyObjRef () const {
+  inline operator Object* () const {
     assert(type == ValueType::Obj);
     return as.obj;
   }
@@ -92,7 +96,10 @@ public:
     case ValueType::Nil:    return true;
     case ValueType::Undef:  return true;
     case ValueType::Number: return (double)other == (double)(*this);
-    case ValueType::Obj:    return (LoxyObjRef)other == (LoxyObjRef)(*this);
+
+    case ValueType::String:
+    case ValueType::Module:
+    case ValueType::Obj:    return (Object*)other == (Object*)(*this);
     }
   }
 
@@ -103,7 +110,7 @@ public:
   Value(ValueType type, Variant as) : type(type), as(as) {}
 
   Value(double number);
-  Value(LoxyObjRef ref);
+  Value(Object *ref);
 };
 
 // Object representations.
@@ -112,20 +119,20 @@ public:
 // managed smart pointers.
 
 typedef uint32_t Hash;
-typedef std::map<LoxyStringRef, Value> SymbolTable;
-typedef std::map<Hash, LoxyStringRef> StringPool;
+typedef std::map<StringRef, Value> SymbolTable;
+typedef std::map<Hash, StringRef> StringPool;
 
 // global string pool.
 StringPool stringPool;
 
-/// class LoxyObj - based object type inherited by every Loxy object.
-class LoxyObj {
+/// class Object - based object type inherited by every Loxy object.
+class Object {
 public:
 
   bool    isDark;
-  LoxyObjRef next;
+  ObjectRef next;
 
-  LoxyObj() : isDark(false), next(nullptr) {}
+  Object() : isDark(false), next(nullptr) {}
 
 private:
   // object allocations should be prevented.
@@ -135,12 +142,12 @@ private:
   void   operator delete[] (void*) = delete;
 
   // avoid copy.
-  LoxyObj(const LoxyObj&) = delete;
-  LoxyObj& operator=(const LoxyObj &) = delete;
+  Object(const Object&) = delete;
+  Object& operator=(const Object &) = delete;
 };
 
-/// LoxyString - string class.
-class LoxyString : public LoxyObj {
+/// String - string class.
+class String : public Object {
 private:
 
   // auto managed chars.
@@ -152,30 +159,31 @@ private:
 
 public:
 
-  LoxyString(std::unique_ptr<char> chars, int length, Hash hash) :
+  String(std::unique_ptr<char> chars, int length, Hash hash) :
     chars(std::move(chars)), length(length), hash_(hash) {}
 
   Hash hash() const { return hash_; }
 
-  bool operator== (const LoxyString &other) {
-    // since we've interned strings, equality can be compared by 
-    // identity.
-    return other.chars == chars;
-  }
+  // It seems like we'll be able to compare pointers instead.
+  // bool operator== (const String &other) {
+  //   // since we've interned strings, equality can be compared by 
+  //   // identity.
+  //   return other.chars == chars;
+  // }
 
   operator char*() { return chars.get(); }
 
   /// create - called by VM. creates a loxy string object. 
-  ///   [chars] will not be owned by LoxyString.
-  static LoxyStringRef create(LoxyVM &vm, const char *chars);
-};
+  ///   [chars] will not be owned by String.
+  static StringRef create(LoxyVM &vm, const char *chars);
+};  // class tring.
 
-/// class LoxyModule - each loxy file is a module.
-class LoxyModule : public LoxyObj {
+/// class Module - each loxy file is a module.
+class Module : public Object {
 private:
 
   // the name of the module.
-  LoxyStringRef name;
+  StringRef name;
 
   // the chunk that contains bytecode.
   ChunkRef chunk;
@@ -187,26 +195,26 @@ private:
 
 public:
 
-  LoxyModule(LoxyStringRef name, ChunkRef chunk)
+  Module(StringRef name, ChunkRef chunk)
     : name(name), chunk(chunk) {}
 
   ChunkRef getChunk() const { return chunk; }
   void setChunk(ChunkRef c) { chunk = c; }
 
-  LoxyStringRef getName() const { return name; }
-  void setName(LoxyStringRef n) { name = n; }
+  StringRef getName() const { return name; }
+  void setName(StringRef n) { name = n; }
 
-  LoxyModule(ChunkRef chunk, LoxyStringRef name) : name(name), chunk(chunk) {}
+  Module(ChunkRef chunk, StringRef name) : name(name), chunk(chunk) {}
 
   /// getGlobal - finds a top-level variable within this module
   ///   if not found, returns false without setting [result].
-  bool getGlobal(LoxyStringRef name, Value *result);
+  bool getGlobal(StringRef name, Value *result);
 
   /// setGlobal - sets a top-level variable within this module.
-  bool setGlobal(LoxyStringRef name, Value value);
+  bool setGlobal(StringRef name, Value value);
 
-  static LoxyModuleRef create(LoxyVM &vm, const char *name);
-};
+  static ModuleRef create(LoxyVM &vm, const char *name);
+};  // class Module
 
 
 }

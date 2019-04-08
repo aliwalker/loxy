@@ -11,13 +11,13 @@ class Chunk;
 class Compiler;
 class LoxyVM;
 class Parser;
-class LoxyModule;
+class Module;
 
 class Compiler {
 public:
 
   /// compileModule - compiles [source] in the context of [module].
-  static bool compileModule(LoxyVM &vm, const char *source, LoxyModule &module);
+  static bool compileModule(LoxyVM &vm, const char *source, Module &module);
 };
 
 } // namespace loxy
