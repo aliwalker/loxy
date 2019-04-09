@@ -23,13 +23,27 @@ bool isTruthy(const Value &value) {
 
 }
 
+Value::operator String* () const {
+  assert(type == ValueType::String);
+  return static_cast<String*>((Object*)(this));
+}
+
+Value::operator Module* () const {
+  assert(type == ValueType::Module);
+  return static_cast<Module*>((Object*)(this));
+}
+
 std::string Value::toString() const {
   switch (type) {
   case ValueType::Bool: return isTruthy(*this) ? "true" : "false";
   case ValueType::Number: return std::to_string((double)(*this));
   case ValueType::Nil: return "nil";
   case ValueType::Undef: return "undef";
-  // TODO:
+
+  // reference types' toString is virtual.
+  case ValueType::String:
+  case ValueType::Module:
+  case ValueType::Obj: return ((Object*)this)->toString();
   }
 }
 

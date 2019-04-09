@@ -1,7 +1,6 @@
 #ifndef loxy_vm_h
 #define loxy_vm_h
 
-#include <set>
 #include <vector>
 
 #include "chunk.h"
@@ -59,9 +58,6 @@ public:
 
   // execution stack.
   std::vector<Value> stack;
-
-  // interned strings.
-  std::set<StringRef, bool> strings;
 
   // A linked-list of allocated objects.
   ObjectRef first = nullptr;

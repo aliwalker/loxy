@@ -91,6 +91,9 @@ public:
     return as.obj;
   }
 
+  inline operator String* () const;
+  inline operator Module* () const;
+
   bool operator == (const Value &other) const {
     if (type != other.type) return false;
 
@@ -137,6 +140,8 @@ public:
 
   Object() : isDark(false), next(nullptr) {}
 
+  virtual std::string toString() const { return "[Object]"; }
+
 private:
   // object allocations should be prevented.
   void * operator new   (size_t) = delete;
@@ -175,6 +180,8 @@ public:
   // }
 
   operator char*() { return chars.get(); }
+
+  std::string toString() const { return (char*)this; }
 
   /// create - called by VM. creates a loxy string object. 
   ///   [chars] will not be owned by String.
@@ -215,6 +222,11 @@ public:
 
   /// setGlobal - sets a top-level variable within this module.
   bool setGlobal(StringRef name, Value value);
+
+  std::string toString() const {
+    Value name(this->name);
+    return std::string("[module ") + name.toString() + "]";
+  }
 
   static ModuleRef create(LoxyVM &vm, const char *name);
 };  // class Module
