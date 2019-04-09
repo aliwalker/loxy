@@ -73,6 +73,8 @@ private:
   StringRef readString();
 
   Value peek(int distance);
+  Value pop();
+  void push(Value value);
 };
 
 } // namespace loxy

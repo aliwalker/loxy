@@ -35,6 +35,8 @@ size_t ChunkPrinter::printInstruction(Chunk &chunk, size_t offset) {
     return simpleInstruction("POP", chunk, offset);
   case OpCode::RETURN:
     return simpleInstruction("RETURN", chunk, offset);
+  case OpCode::PRINT:
+    return simpleInstruction("PRINT", chunk, offset);
   }
 }
 

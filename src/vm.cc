@@ -14,8 +14,7 @@ namespace loxy {
 
 uint8_t LoxyVM::readByte() {
   auto chunk = currModule->getChunk();
-  offset++;
-  return chunk->read(offset);
+  return chunk->read(offset++);
 }
 
 Value LoxyVM::readConstant() {
@@ -29,8 +28,18 @@ StringRef LoxyVM::readString() {
   return static_cast<String*>(value);
 }
 
+void LoxyVM::push(Value value) {
+  stack.push_back(value);
+}
+
 Value LoxyVM::peek(int distance) {
-  return stack[-1 - distance];
+  return stack[stack.size() - 1 - distance];
+}
+
+Value LoxyVM::pop() {
+  Value top = stack.back();
+  stack.pop_back();
+  return top;
 }
 
 InterpretResult LoxyVM::interpret(const char *source, const char *module) {
@@ -63,9 +72,9 @@ InterpretResult LoxyVM::run() {
       runtimeError("Operands must be numbers.");  \
       return InterpretResult::Runtime_Error;  \
     } \
-    double b = stack.back(); stack.pop_back();  \
-    double a = stack.back(); stack.pop_back();  \
-    stack.push_back(Value( a op b ));  \
+    double b = (double)pop();  \
+    double a = (double)pop();  \
+    push(Value( a op b ));  \
   } while (false)
 
   while (true) {
@@ -73,17 +82,17 @@ InterpretResult LoxyVM::run() {
     switch (instruction) {
     case OpCode::CONSTANT: {
       Value constant = readConstant();
-      stack.push_back(constant);
+      push(constant);
       break;
     }
-    case OpCode::NIL:     stack.push_back(Value::Nil); break;
-    case OpCode::TRUE:    stack.push_back(Value(true)); break;
-    case OpCode::FALSE:   stack.push_back(Value(false)); break;
-    case OpCode::POP:     stack.pop_back(); break;
+    case OpCode::NIL:     push(Value::Nil); break;
+    case OpCode::TRUE:    push(Value(true)); break;
+    case OpCode::FALSE:   push(Value(false)); break;
+    case OpCode::POP:     pop(); break;
 
     case OpCode::GET_LOCAL: {
       uint8_t slot = readByte();
-      stack.push_back(stack[slot]);
+      push(stack[slot]);
       break;
     }
 
@@ -99,7 +108,7 @@ InterpretResult LoxyVM::run() {
         runtimeError("Undefined variable '%s'.", (char*)name);
         return InterpretResult::Runtime_Error;
       }
-      stack.push_back(value);
+      push(value);
       break;
     }
 
@@ -116,17 +125,15 @@ InterpretResult LoxyVM::run() {
       StringRef name = readString();
       Value value = peek(0);
       currModule->setGlobal(name, value);
-      stack.pop_back();
+      pop();
       break;
     }
 
     case OpCode::EQUAL: {
-      Value b = stack.back();
-      stack.pop_back();
-      Value a = stack.back();
-      stack.pop_back();
+      Value b = pop();
+      Value a = pop();
 
-      stack.push_back(a == b ? Value::True : Value::False);
+      push(a == b ? Value::True : Value::False);
       break;
     }
 
@@ -144,29 +151,31 @@ InterpretResult LoxyVM::run() {
           
       //   }
       // }
+      break;
     }
 
     case OpCode::SUBTRACT: BIN_OP(-); break;
     case OpCode::MULTIPLY: BIN_OP(*); break;
     case OpCode::DIVIDE: BIN_OP(/); break;
     case OpCode::NOT: {
-      Value v = stack.back();
-      stack.pop_back();
-      stack.push_back(Value(isFalsy(v) ? Value::True : Value::False));
+      Value v = pop();
+      push(Value(isFalsy(v) ? Value::True : Value::False));
+      break;
     }
     case OpCode::NEGATE: {
-      Value v = peek(0);
-      stack.pop_back();
+      Value v = pop();
       if (!v.isNumber()) {
         runtimeError("Operand must be a number");
         return InterpretResult::Runtime_Error;
       }
-      stack.push_back(Value(-(double)v));
+      push(Value(-(double)v));
       break;
     }
     case OpCode::PRINT: {
-      // Value 
-      // printValue();
+      Value v = pop();
+
+      printf("%s", v.toString().c_str());
+      break;
     }
     case OpCode::RETURN:  return InterpretResult::Ok;
 

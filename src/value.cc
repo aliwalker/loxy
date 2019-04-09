@@ -19,9 +19,6 @@ const Value Value::Undef(ValueType::Undef, Variant((double)0));
 const Value Value::True(ValueType::Bool, Variant(true));
 const Value Value::False(ValueType::Bool, Variant(false));
 
-bool isTruthy(const Value &value) {
-
-}
 
 Value::operator String* () const {
   assert(type == ValueType::String);
@@ -35,7 +32,7 @@ Value::operator Module* () const {
 
 std::string Value::toString() const {
   switch (type) {
-  case ValueType::Bool: return isTruthy(*this) ? "true" : "false";
+  case ValueType::Bool: return bool(*this) ? std::string("true") : std::string("false");
   case ValueType::Number: return std::to_string((double)(*this));
   case ValueType::Nil: return "nil";
   case ValueType::Undef: return "undef";
