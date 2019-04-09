@@ -816,8 +816,10 @@ void Parser::synchronize() {
     case Tok::PRINT:
     case Tok::RETURN:
       return;
-    default: break;
+    default:
+      ;
     }
+    advance();
   }
 }
 
