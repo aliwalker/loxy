@@ -172,13 +172,6 @@ public:
 
   Hash hash() const { return hash_; }
 
-  // It seems like we'll be able to compare pointers instead.
-  // bool operator== (const String &other) {
-  //   // since we've interned strings, equality can be compared by 
-  //   // identity.
-  //   return other.chars == chars;
-  // }
-
   operator char*() { return chars.get(); }
 
   std::string toString() const { return (char*)this; }
@@ -213,8 +206,6 @@ public:
 
   StringRef getName() const { return name; }
   void setName(StringRef n) { name = n; }
-
-  Module(ChunkRef chunk, StringRef name) : name(name), chunk(chunk) {}
 
   /// getGlobal - finds a top-level variable within this module
   ///   if not found, returns false without setting [result].
