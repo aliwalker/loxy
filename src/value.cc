@@ -110,7 +110,7 @@ ModuleRef Module::create(LoxyVM &vm, const char *name) {
   auto chunk = Chunk::create();
 
   auto mem = vm.newObject(sizeof(Module));
-  auto module = ::new Module(modName, chunk);
+  auto module = ::new(mem) Module(modName, chunk);
 
   return module;
 }
