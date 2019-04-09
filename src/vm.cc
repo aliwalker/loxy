@@ -6,6 +6,9 @@
 #include "compiler.h"
 #include "value.h"
 #include "vm.h"
+#ifdef DEBUG
+  #include "debug.h"
+#endif
 
 namespace loxy {
 
@@ -50,6 +53,10 @@ static bool isFalsy(Value value) {
 
 InterpretResult LoxyVM::run() {
   auto chunk = currModule->getChunk();
+#ifdef DEBUG
+  ChunkPrinter::printChunk(*chunk, "main");
+#endif
+
 #define BIN_OP(op)  \
   do { \
     if (!peek(0).isNumber() || !peek(1).isNumber()) { \
@@ -166,7 +173,6 @@ InterpretResult LoxyVM::run() {
     default:  UNREACHABLE();
     }
   }
-  std::cout << "OK" << std::endl;
 }
 
 void *LoxyVM::newObject(size_t size) {

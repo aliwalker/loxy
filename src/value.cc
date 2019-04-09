@@ -19,6 +19,20 @@ const Value Value::Undef(ValueType::Undef, Variant((double)0));
 const Value Value::True(ValueType::Bool, Variant(true));
 const Value Value::False(ValueType::Bool, Variant(false));
 
+bool isTruthy(const Value &value) {
+
+}
+
+std::string Value::toString() const {
+  switch (type) {
+  case ValueType::Bool: return isTruthy(*this) ? "true" : "false";
+  case ValueType::Number: return std::to_string((double)(*this));
+  case ValueType::Nil: return "nil";
+  case ValueType::Undef: return "undef";
+  // TODO:
+  }
+}
+
 // class String
 //
 Hash String::hashString(const char *chars) {

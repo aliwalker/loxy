@@ -5,6 +5,7 @@ project(loxy)
 set(SOURCES
     src/chunk.cc
     src/compiler.cc
+    src/debug.cc
     src/main.cc
     src/value.cc
     src/vm.cc)
