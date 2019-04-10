@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <cstring>
+#include <string>
 #include "value.h"
 #include "memory.h"
 #include "vm.h"
@@ -77,8 +78,10 @@ StringRef String::create(LoxyVM &vm, const char *chars) {
   return ref;
 }
 
-StringRef String::concat(StringRef another) {
-  
+StringRef String::concat(LoxyVM &vm, StringRef another) {
+  auto rawResult = (std::string(chars.get()) + std::string(another->chars.get())).c_str();
+
+  return create(vm, rawResult);
 }
 
 // class Module

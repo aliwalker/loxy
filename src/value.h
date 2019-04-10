@@ -174,7 +174,7 @@ public:
 
   std::string toString() const { return this->chars.get(); }
 
-  StringRef concat(StringRef s2);
+  StringRef concat(LoxyVM &vm, StringRef another);
 
   /// create - called by VM. creates a loxy string object. 
   ///   [chars] will not be owned by String.

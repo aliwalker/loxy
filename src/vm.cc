@@ -149,7 +149,7 @@ InterpretResult LoxyVM::run() {
       if (a.isString() && b.isString()) {
         String *aString = (String*)a;
         String *bString = (String*)b;
-        String *result = aString->concat(bString);
+        String *result = aString->concat(*this, bString);
         push(Value(result));
       } else if (a.isNumber() && b.isNumber()) {
         double aNum = (double)a;
@@ -182,10 +182,13 @@ InterpretResult LoxyVM::run() {
     case OpCode::PRINT: {
       Value v = pop();
 
-      printf("%s", v.toString().c_str());
+      printf("%s\n", v.toString().c_str());
       break;
     }
-    case OpCode::RETURN:  return InterpretResult::Ok;
+    case OpCode::RETURN: {
+      offset = 0;
+      return InterpretResult::Ok;
+    }
 
     default:  UNREACHABLE();
     }
