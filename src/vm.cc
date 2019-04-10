@@ -86,8 +86,8 @@ InterpretResult LoxyVM::run() {
       break;
     }
     case OpCode::NIL:     push(Value::Nil); break;
-    case OpCode::TRUE:    push(Value(true)); break;
-    case OpCode::FALSE:   push(Value(false)); break;
+    case OpCode::TRUE:    push(Value::True); break;
+    case OpCode::FALSE:   push(Value::False); break;
     case OpCode::POP:     pop(); break;
 
     case OpCode::GET_LOCAL: {
@@ -99,11 +99,12 @@ InterpretResult LoxyVM::run() {
     case OpCode::SET_LOCAL: {
       uint8_t slot = readByte();
       stack[slot] = peek(0);
+      break;
     }
 
     case OpCode::GET_GLOBAL: {
       StringRef name = readString();
-      Value value{false};
+      Value value(false);
       if (currModule->getGlobal(name, &value)) {
         runtimeError("Undefined variable '%s'.", (char*)name);
         return InterpretResult::Runtime_Error;
@@ -119,6 +120,8 @@ InterpretResult LoxyVM::run() {
         runtimeError("Undefined variable '%s'.", (char*)name);
         return InterpretResult::Runtime_Error;
       }
+      // "set" is simply an expression which evals to [value].
+      break;
     }
 
     case OpCode::DEFINE_GLOBAL: {
@@ -140,17 +143,22 @@ InterpretResult LoxyVM::run() {
     case OpCode::GREATER: BIN_OP(>); break;
     case OpCode::LESS: BIN_OP(<); break;
     case OpCode::ADD: {
-      auto a = peek(0);
-      auto b = peek(1);
+      auto b = pop();
+      auto a = pop();
 
-      // if (a.isObj() && b.isObj()) {
-      //   auto aObject = (LoxyObj*)a;
-      //   auto bObject = (LoxyObj*)b;
-      //   if (dynamic_cast<LoxyStringRef>(aObject) != nullptr && 
-      //       dynamic_cast<LoxyStringRef>(bObject) != nullptr) {
-          
-      //   }
-      // }
+      if (a.isString() && b.isString()) {
+        String *aString = (String*)a;
+        String *bString = (String*)b;
+        String *result = aString->concat(bString);
+        push(Value(result));
+      } else if (a.isNumber() && b.isNumber()) {
+        double aNum = (double)a;
+        double bNum = (double)b;
+        push(Value(aNum + bNum));
+      } else {
+        runtimeError("Operands must be two numbers or two strings.");
+        return InterpretResult::Runtime_Error;
+      }
       break;
     }
 

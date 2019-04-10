@@ -91,8 +91,8 @@ public:
     return as.obj;
   }
 
-  inline operator String* () const;
-  inline operator Module* () const;
+  operator String* () const;
+  operator Module* () const;
 
   bool operator == (const Value &other) const {
     if (type != other.type) return false;
@@ -174,6 +174,8 @@ public:
 
   std::string toString() const { return this->chars.get(); }
 
+  StringRef concat(StringRef s2);
+
   /// create - called by VM. creates a loxy string object. 
   ///   [chars] will not be owned by String.
   static StringRef create(LoxyVM &vm, const char *chars);
@@ -221,6 +223,6 @@ public:
 };  // class Module
 
 
-}
+} // namespace loxy
 
 #endif

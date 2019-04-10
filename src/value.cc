@@ -77,6 +77,10 @@ StringRef String::create(LoxyVM &vm, const char *chars) {
   return ref;
 }
 
+StringRef String::concat(StringRef another) {
+  
+}
+
 // class Module
 //
 bool Module::getGlobal(StringRef name, Value *result) {
