@@ -748,7 +748,7 @@ void Parser::string() {
   // trim the leading and trailing ".
 
   char *chars = strdup(previous.start + 1);
-  chars[strlen(chars) - 1] = '\0';
+  chars[previous.length - 2] = '\0';
   ObjectRef s = String::create(vm, chars);
 
   emitConstant(Value(s));
