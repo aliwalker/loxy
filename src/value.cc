@@ -40,7 +40,7 @@ std::string Value::toString() const {
   // reference types' toString is virtual.
   case ValueType::String:
   case ValueType::Module:
-  case ValueType::Obj: return ((Object*)this)->toString();
+  case ValueType::Obj: return ((Object*)(*this))->toString();
   }
 }
 

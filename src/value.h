@@ -172,9 +172,7 @@ public:
 
   Hash hash() const { return hash_; }
 
-  operator char*() { return chars.get(); }
-
-  std::string toString() const { return (char*)this; }
+  std::string toString() const { return this->chars.get(); }
 
   /// create - called by VM. creates a loxy string object. 
   ///   [chars] will not be owned by String.
