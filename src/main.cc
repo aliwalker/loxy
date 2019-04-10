@@ -11,7 +11,7 @@ using namespace loxy;
 static void repl(LoxyVM &vm) {
   std::string line;
   
-  while (true){
+  while (true) {
     std::cout << "> ";
 
     if (std::getline(std::cin, line).eof()) {
@@ -25,6 +25,10 @@ static void repl(LoxyVM &vm) {
 
 static std::string readFile(const char *path) {
   std::ifstream t(path);
+  if (t.bad()) {
+    std::cerr << std::string("Unable to find file '") + std::string(path) << "'\n";
+    exit(80);
+  }
   std::string source((std::istreambuf_iterator<char>(t)),
                       std::istreambuf_iterator<char>());
   return source;
