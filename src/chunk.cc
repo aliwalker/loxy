@@ -2,6 +2,11 @@
 
 namespace loxy {
 
+void Chunk::clear() {
+  code.clear();
+  lines.clear();
+}
+
 void Chunk::write(uint8_t byte, int line) {
   code.push_back(byte);
   lines.push_back(line);

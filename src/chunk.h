@@ -53,6 +53,9 @@ public:
   /// write - writes a byte to chunk's code.
   void write(uint8_t byte, int line);
 
+  /// clear - clears [code] & [lines].
+  void clear();
+
   /// read - reads a piece of bytecode.
   constexpr uint8_t read(size_t offset) const { return code[offset]; }
 

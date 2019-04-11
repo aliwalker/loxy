@@ -16,7 +16,7 @@ size_t ChunkPrinter::printInstruction(Chunk &chunk, size_t offset) {
   printf("%04d ", (int)offset);
 
   if (offset > 0 && chunk.lines[offset] == chunk.lines[offset - 1]) {
-    printf("    | ");
+    printf("   | ");
   } else {
     printf("%4d ", chunk.lines[offset]);
   }
