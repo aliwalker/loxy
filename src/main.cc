@@ -25,12 +25,14 @@ static void repl(LoxyVM &vm) {
 
 static std::string readFile(const char *path) {
   std::ifstream t(path);
-  if (t.bad()) {
-    std::cerr << std::string("Unable to find file '") + std::string(path) << "'\n";
+  if (!t.is_open()) {
+    std::cerr << std::string("Error: Unable to find module '") + std::string(path) << "'\n";
     exit(80);
   }
   std::string source((std::istreambuf_iterator<char>(t)),
                       std::istreambuf_iterator<char>());
+  
+  t.close();
   return source;
 }
 
