@@ -349,7 +349,7 @@ struct Locals {
   Local vars[UINT8_COUNT];
 
   // number of variables in [vars].
-  size_t count = 0;
+  int count = 0;
 public:
   Locals() {}
 
@@ -842,7 +842,7 @@ void Parser::endScope() {
 //
 
 int Parser::resolveLocal(Token &name) {
-  for (uint8_t i = locals.count - 1; i >= 0; i--) {
+  for (int i = locals.count - 1; i >= 0; i--) {
     Local &local = locals.get(i);
     if (identifiersEqual(*local.name, name)) {
       if (local.depth == -1) {
@@ -888,7 +888,10 @@ void Parser::defineVariable(uint8_t global) {
 }
 
 uint8_t Parser::identifierConstant(Token &name) {
-  auto nameChars = String::create(vm, name.start);
+  auto rawNameChars = strdup(name.start);
+  rawNameChars[name.length] = '\0';
+  auto nameChars = String::create(vm, rawNameChars);
+  free(rawNameChars);
   return makeConstant(Value(nameChars, ValueType::String));
 }
 

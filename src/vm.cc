@@ -105,7 +105,7 @@ InterpretResult LoxyVM::run() {
     case OpCode::GET_GLOBAL: {
       StringRef name = readString();
       Value value(false);
-      if (currModule->getGlobal(name, &value)) {
+      if (!currModule->getGlobal(name, &value)) {
         runtimeError("Undefined variable '%s'.", (char*)name);
         return InterpretResult::Runtime_Error;
       }
@@ -126,9 +126,8 @@ InterpretResult LoxyVM::run() {
 
     case OpCode::DEFINE_GLOBAL: {
       StringRef name = readString();
-      Value value = peek(0);
+      Value value = pop();
       currModule->setGlobal(name, value);
-      pop();
       break;
     }
 
@@ -182,7 +181,7 @@ InterpretResult LoxyVM::run() {
     case OpCode::PRINT: {
       Value v = pop();
 
-      printf("%s\n", v.toString().c_str());
+      printf("Print: %s\n", v.toString().c_str());
       break;
     }
     case OpCode::RETURN: {
@@ -206,7 +205,7 @@ void *LoxyVM::newObject(size_t size) {
 }
 
 void LoxyVM::runtimeError(const char *format, ...) {
-
+  printf("runtime error: %s\n", format);
 }
 
 } // namespace loxy
