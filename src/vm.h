@@ -48,10 +48,13 @@ public:
   /// run - runs currModule.
   InterpretResult run();
 
+  /// loadModule - loads a module of [name].
+  Module *loadModule(const char *name);
+
 public:
 
   // a linked list of modules loaded.
-  Module *currModule;
+  Module *currModule = nullptr;
 
   // offset in the currModule's chunk.
   size_t offset = 0;

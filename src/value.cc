@@ -113,6 +113,12 @@ ModuleRef Module::create(LoxyVM &vm, const char *name) {
   auto modName = String::create(vm, name);
   auto chunk = Chunk::create();
 
+  // if module is already loaded, return it.
+  if (auto mod = vm.loadModule(name)) {
+    mod->setChunk(chunk);
+    return mod;
+  }
+
   auto mem = vm.newObject(sizeof(Module));
   auto module = ::new(mem) Module(modName, chunk);
 

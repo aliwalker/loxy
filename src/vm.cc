@@ -42,6 +42,16 @@ Value LoxyVM::pop() {
   return top;
 }
 
+Module *LoxyVM::loadModule(const char *name) {
+  auto mod = currModule;
+  auto modName = String::create(*this, name);
+  while (mod != nullptr) {
+    if (mod->getName() == modName) return mod;
+    mod = static_cast<Module*>(mod->next);
+  }
+  return nullptr;
+}
+
 InterpretResult LoxyVM::interpret(const char *source, const char *module) {
   auto mod = Module::create(*this, module);
 
