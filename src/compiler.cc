@@ -751,7 +751,7 @@ void Parser::string() {
   chars[previous.length - 2] = '\0';
   ObjectRef s = String::create(vm, chars);
 
-  emitConstant(Value(s));
+  emitConstant(Value(s, ValueType::String));
 }
 
 // prefix for Tok::IDENTIFIER.
@@ -889,7 +889,7 @@ void Parser::defineVariable(uint8_t global) {
 
 uint8_t Parser::identifierConstant(Token &name) {
   auto nameChars = String::create(vm, name.start);
-  return makeConstant(Value(nameChars));
+  return makeConstant(Value(nameChars, ValueType::String));
 }
 
 bool Parser::identifiersEqual(Token &name1, Token &name2) {

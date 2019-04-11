@@ -13,7 +13,7 @@ StringPool stringPool;
 // class Value
 //
 Value::Value(double number) : type(ValueType::Number), as(number) {}
-Value::Value(Object* ref) : type(ValueType::Obj), as(ref) {}
+Value::Value(Object* ref, ValueType type) : type(type), as(ref) {}
 
 const Value Value::Nil(ValueType::Nil, Variant((double)0));
 const Value Value::Undef(ValueType::Undef, Variant((double)0));
@@ -23,12 +23,12 @@ const Value Value::False(ValueType::Bool, Variant(false));
 
 Value::operator String* () const {
   assert(type == ValueType::String);
-  return static_cast<String*>((Object*)(this));
+  return static_cast<String*>((Object*)(*this));
 }
 
 Value::operator Module* () const {
   assert(type == ValueType::Module);
-  return static_cast<Module*>((Object*)(this));
+  return static_cast<Module*>((Object*)(*this));
 }
 
 std::string Value::toString() const {

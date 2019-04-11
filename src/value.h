@@ -87,7 +87,7 @@ public:
   }
 
   inline operator Object* () const {
-    assert(type == ValueType::Obj);
+    assert(type == ValueType::Obj || type == ValueType::String || type == ValueType::Module);
     return as.obj;
   }
 
@@ -116,7 +116,7 @@ public:
   Value(ValueType type, Variant as) : type(type), as(as) {}
 
   Value(double number);
-  Value(Object *ref);
+  Value(Object *ref, ValueType type = ValueType::Obj);
 };
 
 // Object representations.
