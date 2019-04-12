@@ -38,7 +38,7 @@ size_t ChunkPrinter::printInstruction(Chunk &chunk, size_t offset) {
   case OpCode::GET_GLOBAL:
     return constantInstruction("GET_GLOBAL", chunk, offset);
   case OpCode::SET_GLOBAL:
-    return constantInstruction("GET_GLOBAL", chunk, offset);
+    return constantInstruction("SET_GLOBAL", chunk, offset);
   case OpCode::DEFINE_GLOBAL:
     return constantInstruction("DEFINE_GLOBAL", chunk, offset);
   case OpCode::GET_LOCAL:

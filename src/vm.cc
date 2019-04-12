@@ -126,7 +126,8 @@ InterpretResult LoxyVM::run() {
     case OpCode::SET_GLOBAL: {
       StringRef name = readString();
       Value value = peek(0);
-      if (!currModule->setGlobal(name, value)) {
+      // If this is a new key, then [name] is not defined.
+      if (currModule->setGlobal(name, value) == true) {
         runtimeError("Undefined variable '%s'.", (char*)name);
         return InterpretResult::Runtime_Error;
       }

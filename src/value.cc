@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <cstring>
 #include <string>
+#include <utility>
 #include "value.h"
 #include "memory.h"
 #include "vm.h"
@@ -98,15 +99,16 @@ bool Module::getGlobal(StringRef name, Value *result) {
 }
 
 bool Module::setGlobal(StringRef name, Value value) {
-  bool newKey = true;
+  auto global = globals.find(name);
+  if (global == globals.end()) {
 
-  if (globals.find(name) == globals.end()) {
-    newKey = false;
+    auto entry = std::make_pair(name, value);
+    globals.insert(entry);
+    return true;
   }
 
-  auto pair = std::make_pair(name, value);
-  globals.insert(pair);
-  return newKey;
+  global->second = value;
+  return false;
 }
 
 ModuleRef Module::create(LoxyVM &vm, const char *name) {
