@@ -62,6 +62,7 @@ InterpretResult LoxyVM::interpret(const char *source, const char *module) {
   
   mod->next = currModule;
   currModule = mod;
+  offset = 0;
 
   return run();
 }
@@ -74,6 +75,7 @@ InterpretResult LoxyVM::run() {
   auto chunk = currModule->getChunk();
 #ifdef DEBUG
   ChunkPrinter::printChunk(*chunk, "main");
+  printf("==========\n");
 #endif
 
 #define BIN_OP(op)  \
@@ -192,7 +194,7 @@ InterpretResult LoxyVM::run() {
     case OpCode::PRINT: {
       Value v = pop();
 
-      printf("Print: %s\n", v.toString().c_str());
+      printf("%s\n", v.toString().c_str());
       break;
     }
     case OpCode::RETURN: {
