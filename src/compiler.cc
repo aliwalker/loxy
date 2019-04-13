@@ -336,7 +336,7 @@ struct ParseRule {
 /// struct Local - represents local variables.
 struct Local {
   // The name token that contains source info.
-  Token *name = nullptr;
+  Token name;
 
   // The depth of the variable. Top-level variable has depth of 0.
   // -1 means the name is being declared yet usable.
@@ -354,7 +354,7 @@ public:
   Locals() {}
 
   /// addLocals - adds a local variable to underlying [vars].
-  void add(Token *name) {
+  void add(Token name) {
     if (count == UINT8_COUNT) {
       // error("Too many local variables in function.");
       return;
@@ -375,12 +375,12 @@ public:
     count--;
   }
 
-  void set(uint8_t index, Token name) {
-    Local &var = vars[index];
-    var.name = &name;
-  }
+  // void set(int index, Token name) {
+  //   Local &var = vars[index];
+  //   var.name = &name;
+  // }
 
-  void set(uint8_t index, int depth) {
+  void set(int index, int depth) {
     Local &var = vars[index];
     var.depth = depth;
   }
@@ -844,7 +844,7 @@ void Parser::endScope() {
 int Parser::resolveLocal(Token &name) {
   for (int i = locals.count - 1; i >= 0; i--) {
     Local &local = locals.get(i);
-    if (identifiersEqual(*local.name, name)) {
+    if (identifiersEqual(local.name, name)) {
       if (local.depth == -1) {
         error("Cannot reference a local variable before it is initialized.");
       }
@@ -858,7 +858,8 @@ int Parser::resolveLocal(Token &name) {
 void Parser::declareVariable() {
   if (scopeDepth == 0)  return;
 
-  Token &name = previous;
+  // make a copy.
+  Token name = previous;
 
   // check for conflicting name in current scope.
   for (int i = locals.count - 1; i >= 0; i--) {
@@ -866,12 +867,12 @@ void Parser::declareVariable() {
 
     // ensure we've not fallen out of current scope.
     if (local.depth != -1 && local.depth < scopeDepth) break;
-    if (identifiersEqual(name, *local.name)) {
+    if (identifiersEqual(name, local.name)) {
       error("Variable with this name already declared in this scope.");
     }
   }
 
-  locals.add(&name);
+  locals.add(name);
 }
 
 void Parser::defineVariable(uint8_t global) {
