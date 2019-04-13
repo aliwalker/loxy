@@ -861,7 +861,7 @@ void Parser::declareVariable() {
   Token &name = previous;
 
   // check for conflicting name in current scope.
-  for (uint8_t i = locals.count - 1; i >= 0; i--) {
+  for (int i = locals.count - 1; i >= 0; i--) {
     Local &local = locals.get(i);
 
     // ensure we've not fallen out of current scope.
