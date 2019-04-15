@@ -65,6 +65,10 @@ size_t ChunkPrinter::printInstruction(Chunk &chunk, size_t offset) {
     return simpleInstruction("RETURN", chunk, offset);
   case OpCode::PRINT:
     return simpleInstruction("PRINT", chunk, offset);
+  case OpCode::JUMP:
+    return jumpInstruction("JUMP", 1, chunk, offset);
+  case OpCode::JUMP_IF_FALSE:
+    return jumpInstruction("JUMP_IF_FALSE", 1, chunk, offset);
   }
 }
 
@@ -88,4 +92,10 @@ size_t ChunkPrinter::byteInstruction(const char *inst, Chunk &chunk, size_t offs
   return offset + 2;
 }
 
+size_t ChunkPrinter::jumpInstruction(const char *inst, int sign, Chunk &chunk, size_t offset) {
+  uint16_t jump = (uint16_t)(chunk.code[offset + 1] << 8);
+  jump |= chunk.code[offset + 2];
+  printf("%-16s %4d -> %d\n", inst, (int)offset, (int)offset + 3 + sign * jump);
+  return offset + 3;
+}
 }

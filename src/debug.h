@@ -23,6 +23,8 @@ private:
 
   // prints instruction that has 1 arg.
   static size_t byteInstruction(const char *Inst, Chunk &chunk, size_t offset);
+
+  static size_t jumpInstruction(const char *inst, int sign, Chunk &chunk, size_t offset);
 };  // class ChunkPrinter
 
 } // namespace loxy

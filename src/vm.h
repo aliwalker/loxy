@@ -72,6 +72,7 @@ private:
   // helpers for reading from currModule's chunk.
   //
   uint8_t readByte();
+  uint16_t readShort();
   Value readConstant();
   StringRef readString();
 

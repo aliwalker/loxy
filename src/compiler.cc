@@ -375,11 +375,6 @@ public:
     count--;
   }
 
-  // void set(int index, Token name) {
-  //   Local &var = vars[index];
-  //   var.name = &name;
-  // }
-
   void set(int index, int depth) {
     Local &var = vars[index];
     var.depth = depth;
@@ -475,6 +470,8 @@ private:
 
   // sub parsers for expressions.
   void expression();
+  void and_();  // a == 5 and b == 2
+  void or_();   // a == 5 or a == 6
   void binary();
   void literal();
   void number();
@@ -498,6 +495,14 @@ private:
   void emit(OpCode op);
   void emitReturn();
   void emitConstant(Value value);
+
+  /// emitJump - emits [jumpInst] and a 2-byte offset for jump. 
+  ///   Returns the index of the offset in the compiling chunk.
+  int emitJump(OpCode jumpInst);
+
+  /// patchJump - replaces the jump instruction's arg(resides in [offset]) 
+  ///   with the number bytes to skip to current end of bytecode.
+  void patchJump(int offset);
 
   // error handling.
   //
@@ -610,6 +615,7 @@ void Parser::expression() {
   parsePrecedence(Precedence::ASSIGNMENT);
 }
 
+// the driver for dispatching to sub parsers.
 void Parser::parsePrecedence(Precedence prec) {
   // Consumes the starting token.
   advance();
@@ -637,6 +643,36 @@ void Parser::parsePrecedence(Precedence prec) {
   }
 }
 
+void Parser::or_() {
+  int elseJump = emitJump(OpCode::JUMP_IF_FALSE);
+
+  // if we reach here, then lhs is true, jump to the end.
+  int endJump = emitJump(OpCode::JUMP);
+
+  patchJump(elseJump);
+
+  // pop the lhs.
+  emit(OpCode::POP);
+
+  // rhs
+  parsePrecedence(Precedence::OR);
+  patchJump(endJump);
+}
+
+void Parser::and_() {
+  // short circuit if the left operand is false
+  int endJump = emitJump(OpCode::JUMP_IF_FALSE);
+
+  // remember the lhs has already been parsed & emiited.
+  emit(OpCode::POP);
+
+  // parse & emit the rhs.
+  parsePrecedence(Precedence::AND);
+
+  // patch JUMP_IF_FALSE's arg.
+  patchJump(endJump);
+}
+
 uint8_t Parser::makeConstant(Value value) {
   int constant = currentChunk().addConstant(value);
 
@@ -648,13 +684,15 @@ uint8_t Parser::makeConstant(Value value) {
 }
 
 ParseRule &Parser::getRule(Tok type) {
-  auto grouping = [this](bool canAssign) { this->grouping(); };
-  auto binary = [this](bool canAssign) { this->binary(); };
-  auto variable = [this](bool canAssign) { this->variable(canAssign); };
-  auto number = [this](bool canAssign) { this->number(); };
-  auto string = [this](bool canAssign) { this->string(); };
-  auto literal = [this](bool canAssign) { this->literal(); };
-  auto unary = [this](bool canAssign) { this->unary(); };
+  static auto grouping = [this](bool canAssign) { this->grouping(); };
+  static auto binary = [this](bool canAssign) { this->binary(); };
+  static auto variable = [this](bool canAssign) { this->variable(canAssign); };
+  static auto number = [this](bool canAssign) { this->number(); };
+  static auto string = [this](bool canAssign) { this->string(); };
+  static auto literal = [this](bool canAssign) { this->literal(); };
+  static auto unary = [this](bool canAssign) { this->unary(); };
+  static auto and_ = [this](bool canAssign) { this->and_(); };
+  static auto or_ = [this](bool canAssign) { this->or_(); };
 
   // The driver of pratt-parsing.
   static ParseRule rules[] = {
@@ -680,7 +718,7 @@ ParseRule &Parser::getRule(Tok type) {
     { variable,    nullptr,    Precedence::NONE },       // TOKEN_IDENTIFIER
     { string,      nullptr,    Precedence::NONE },       // TOKEN_STRING
     { number,      nullptr,    Precedence::NONE },       // TOKEN_NUMBER
-    { nullptr,     nullptr,    Precedence::AND },        // TOKEN_AND
+    { nullptr,     and_,       Precedence::AND },        // TOKEN_AND
     { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_CLASS
     { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_ELSE
     { literal,     nullptr,    Precedence::NONE },       // TOKEN_FALSE
@@ -688,7 +726,7 @@ ParseRule &Parser::getRule(Tok type) {
     { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_FUN
     { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_IF
     { literal,     nullptr,    Precedence::NONE },       // TOKEN_NIL
-    { nullptr,     nullptr,    Precedence::OR },         // TOKEN_OR
+    { nullptr,     or_,        Precedence::OR },         // TOKEN_OR
     { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_PRINT
     { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RETURN
     { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_SUPER
@@ -974,6 +1012,33 @@ void Parser::emitConstant(Value value) {
   emit(makeConstant(value));
 }
 
+int Parser::emitJump(OpCode jumpInst) {
+  // emit the instruction.
+  emit(jumpInst);
+
+  // emit the jump offset which can be patched
+  emit(0xff);
+  emit(0xff);
+
+  // return the index of this offset
+  return currentChunk().size() - 2;
+}
+
+void Parser::patchJump(int offset) {
+  // figure out the number of bytes to jump forward.
+  // the preceding two bytes is the jump arg itself, which'll be
+  // consumed by the VM.
+  int jumpedBytes = currentChunk().size() - offset - 2;
+
+  if (jumpedBytes > UINT16_MAX) {
+    error("Too much code to jump over.");
+  }
+
+  // write back.
+  currentChunk().code[offset] = (jumpedBytes >> 8) & 0xff;
+  currentChunk().code[offset + 1] = jumpedBytes & 0xff;
+}
+
 // error handling
 //
 void Parser::error(const char *msg) {
@@ -988,7 +1053,7 @@ void Parser::errorAt(const Token &token, const char *msg) {
   if (panicMode)  return;
   panicMode = true;
 
-  std::cerr << "[line " << token.line << "]";
+  std::cerr << "[line " << token.line << "] Error";
 
   if (token.type == Tok::_EOF) {
     std::cerr << " at end";
@@ -997,7 +1062,7 @@ void Parser::errorAt(const Token &token, const char *msg) {
     std::cerr << " at '" << token.start;
   }
 
-  std::cerr << ": " << msg << std::endl;
+  std::cerr << "': " << msg << std::endl;
   hadErorr = true;
 }
 

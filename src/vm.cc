@@ -17,6 +17,11 @@ uint8_t LoxyVM::readByte() {
   return chunk->read(offset++);
 }
 
+uint16_t LoxyVM::readShort() {
+  uint16_t sh = ((uint16_t)readByte() << 8) | readByte();
+  return sh;
+}
+
 Value LoxyVM::readConstant() {
   auto chunk = currModule->getChunk();
   auto constIndx = readByte();
@@ -197,6 +202,20 @@ InterpretResult LoxyVM::run() {
       printf("%s\n", v.toString().c_str());
       break;
     }
+
+    case OpCode::JUMP: {
+      // jump over the off following JUMP instruction.
+      offset += readShort();
+      break;
+    }
+
+    case OpCode::JUMP_IF_FALSE: {
+      uint16_t offs = readShort();
+
+      if (isFalsy(peek(0))) offset += offs;
+      break;
+    }
+
     case OpCode::RETURN: {
       offset = 0;
       return InterpretResult::Ok;
