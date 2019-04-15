@@ -459,6 +459,7 @@ private:
   /// varDeclaration := "var" identifier ("=" expression)?
   void varDeclaration();
   void statement();
+  void ifStatement();
   void block();
   void expressionStatement();
   void printStatement();
@@ -580,7 +581,9 @@ uint8_t Parser::parseVariable(const char *errorMsg) {
 }
 
 void Parser::statement() {
-  if (match(Tok::PRINT)) {
+  if (match(Tok::IF)) {
+    ifStatement();
+  } else if (match(Tok::PRINT)) {
     printStatement();
   } else if (match(Tok::LEFT_BRACE)) {
     beginScope();
@@ -589,6 +592,33 @@ void Parser::statement() {
   } else {
     expressionStatement();
   }
+}
+
+void Parser::ifStatement() {
+  consume(Tok::LEFT_PAREN, "Expect '(' after 'if'");
+  
+  // TODO: consider strong typing?
+  expression();
+  consume(Tok::RIGHT_PAREN, "Expect ')' after condition.");
+
+  // jump over the "then" branch if cond is false.
+  int elseJump = emitJump(OpCode::JUMP_IF_FALSE);
+
+  // condition.
+  emit(OpCode::POP);
+  // if POP was executed, the "then" branch will be executed.
+  statement();
+
+  // jump over the else branch
+  int endJump = emitJump(OpCode::JUMP);
+  
+  // else branch.
+  patchJump(elseJump);
+  emit(OpCode::POP);
+
+  if (match(Tok::ELSE)) statement();
+
+  patchJump(endJump);
 }
 
 void Parser::printStatement() {
