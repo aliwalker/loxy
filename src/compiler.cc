@@ -459,6 +459,7 @@ private:
   /// varDeclaration := "var" identifier ("=" expression)?
   void varDeclaration();
   void statement();
+  void whileStatement();
   void forStatement();
   void ifStatement();
   void block();
@@ -596,6 +597,8 @@ uint8_t Parser::parseVariable(const char *errorMsg) {
 void Parser::statement() {
   if (match(Tok::FOR)) {
     forStatement();
+  } else if (match(Tok::WHILE)) {
+    whileStatement();
   } else if (match(Tok::IF)) {
     ifStatement();
   } else if (match(Tok::PRINT)) {
@@ -607,6 +610,29 @@ void Parser::statement() {
   } else {
     expressionStatement();
   }
+}
+
+void Parser::whileStatement() {
+  // current position
+  int loopStart = currentChunk().size();
+  consume(Tok::LEFT_PAREN, "Expect '(' after 'while'");
+  expression();
+  consume(Tok::RIGHT_PAREN, "Expect ')' after condition");
+
+  // position to jump to when exit the loop
+  int exitJump = emitJump(OpCode::JUMP_IF_FALSE);
+
+  // pop condition
+  emit(OpCode::POP);
+  
+  // body
+  statement();
+
+  emitLoop(loopStart);
+  patchJump(exitJump);
+
+  // pop condition
+  emit(OpCode::POP);
 }
 
 void Parser::forStatement() {

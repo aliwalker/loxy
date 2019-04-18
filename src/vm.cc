@@ -96,7 +96,7 @@ static Value greaterThen(Value a, Value b) {
 InterpretResult LoxyVM::run() {
   auto chunk = currModule->getChunk();
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT_CODE
   ChunkPrinter::printChunk(*chunk, "main");
 #endif
 
@@ -268,8 +268,11 @@ InterpretResult LoxyVM::run() {
     }
 
     default:  UNREACHABLE();
-    }
   }
+  }
+
+#undef arithmetics
+#undef assert_numbers
 }
 
 void *LoxyVM::newObject(size_t size) {
