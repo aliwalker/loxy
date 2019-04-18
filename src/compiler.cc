@@ -343,6 +343,59 @@ struct Local {
   int   depth = -1;
 };
 
+/// class ScopeInfo - bookkeeping info of lexical scopes used
+///   by the compiler.
+class ScopeInfo {
+private:
+  // local variables stacked by scope
+  Local vars[UINT8_MAX];
+  
+  // count of [vars]
+  int count = 0;
+
+  // current depth.
+  int depth = 0;
+
+public:
+
+  // marks a local variable comes into scope yet available.
+  int createLocal(Token name) {
+    vars[count].name = name;
+    vars[count].depth = depth;
+    count++;
+    return count - 1;
+  }
+
+  // marks var[index] as initialized.
+  // must be called when initializer is emitted.
+  void initLocal(uint8_t index) {
+    assert(index < count && "Initializing variable out of scope!");
+    vars[index].depth = depth;
+  }
+
+  // reads a local variable at [index].
+  const Local &getLocal(uint8_t index) const {
+    assert(index < count && "Getting variable out of scope!");
+    assert(vars[index].depth != -1 && "Getting variable not initialized yet!");
+    return vars[index];
+  }
+
+  // called when entered a new lexical scope.
+  void pushScope() { depth++; }
+
+  // called when current scope ends.
+  // returns the number of locals that should be popped.
+  int popScope() {
+    assert(depth > 0 && "popScope called at top-level scope!");
+
+    int oldCount = count;
+    while (count > 0 && vars[count - 1].depth == depth) count--;
+
+    depth--;
+    return oldCount - count;
+  }
+};
+
 /// struct Locals - a structrue for manipulating current local variables 
 ///   in scope.
 struct Locals {

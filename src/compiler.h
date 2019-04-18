@@ -10,7 +10,6 @@ namespace loxy {
 class Chunk;
 class Compiler;
 class LoxyVM;
-class Parser;
 class Module;
 
 class Compiler {
