@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <iostream>
 
 #include "debug.h"
 #include "chunk.h"
@@ -6,10 +7,18 @@
 namespace loxy {
 
 void ChunkPrinter::printChunk(Chunk &chunk, const char *name) {
-  printf("== %s ==\n", name);
+  std::cout.width(10);
+  std::cout.fill('=');
+  std::cout << " " << name << " ";
+  std::cout.width(10);
+  std::cout.fill('=');
+  std::cout << "\n";
   for (size_t offset = 0; offset < chunk.size();) {
     offset = printInstruction(chunk, offset);
   }
+  std::cout.width(25);
+  std::cout.fill('=');
+  std::cout << "\n";
 }
 
 size_t ChunkPrinter::printInstruction(Chunk &chunk, size_t offset) {
@@ -69,6 +78,8 @@ size_t ChunkPrinter::printInstruction(Chunk &chunk, size_t offset) {
     return jumpInstruction("JUMP", 1, chunk, offset);
   case OpCode::JUMP_IF_FALSE:
     return jumpInstruction("JUMP_IF_FALSE", 1, chunk, offset);
+  case OpCode::LOOP:
+    return jumpInstruction("LOOP", -1, chunk, offset);
   }
 }
 

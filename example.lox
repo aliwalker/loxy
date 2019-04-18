@@ -1,6 +1,5 @@
 {
-  var a = 1
-  var b = a + 30
-
-  print b
+  for (var i = 0; i < 5; i = i + 1) {
+    print i;
+  }
 }

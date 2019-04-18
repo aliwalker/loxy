@@ -54,6 +54,7 @@ enum class OpCode: uint8_t {
   NEGATE,
   JUMP,
   JUMP_IF_FALSE,
+  LOOP,
   PRINT,
   RETURN,
 };  // enum OpCode

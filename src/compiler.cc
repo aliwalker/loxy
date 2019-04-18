@@ -459,6 +459,7 @@ private:
   /// varDeclaration := "var" identifier ("=" expression)?
   void varDeclaration();
   void statement();
+  void forStatement();
   void ifStatement();
   void block();
   void expressionStatement();
@@ -504,6 +505,18 @@ private:
   /// patchJump - replaces the jump instruction's arg(resides in [offset]) 
   ///   with the number bytes to skip to current end of bytecode.
   void patchJump(int offset);
+
+  void emitLoop(int loopStart) {
+    emit(OpCode::LOOP);
+
+    int offset = currentChunk().size() - loopStart + 2;
+    if (offset > UINT16_MAX) error("Loop body too large");
+
+    // high bits
+    emit((offset >> 8) & 0xff);
+    // low bits
+    emit(offset & 0xff);
+  }
 
   // error handling.
   //
@@ -581,7 +594,9 @@ uint8_t Parser::parseVariable(const char *errorMsg) {
 }
 
 void Parser::statement() {
-  if (match(Tok::IF)) {
+  if (match(Tok::FOR)) {
+    forStatement();
+  } else if (match(Tok::IF)) {
     ifStatement();
   } else if (match(Tok::PRINT)) {
     printStatement();
@@ -592,6 +607,68 @@ void Parser::statement() {
   } else {
     expressionStatement();
   }
+}
+
+void Parser::forStatement() {
+  // scope for loop var
+  beginScope();
+
+  consume(Tok::LEFT_PAREN, "Expect '(' after 'for'");
+
+  // initializer
+  if (match(Tok::VAR)) {
+    varDeclaration();
+  } else if (match(Tok::SEMICOLON)) {
+
+  } else {
+    expressionStatement();
+  }
+
+  // the position of condition.
+  int loopStart = currentChunk().size();
+  int exitJump = -1;
+
+  // condition
+  if (!match(Tok::SEMICOLON)) {
+    expression();
+    consume(Tok::SEMICOLON, "Expect ';' after condition");
+    exitJump = emitJump(OpCode::JUMP_IF_FALSE);
+
+    // cond still true
+    emit(OpCode::POP);
+  }
+
+  // increment
+  if (!match(Tok::RIGHT_PAREN)) {
+    int bodyJump = emitJump(OpCode::JUMP);
+
+    // the index of the increment byte
+    int incrementStart = currentChunk().size();
+    
+    // increment
+    expression();
+    emit(OpCode::POP);
+    consume(Tok::RIGHT_PAREN, "Expect ')' after for clauses.");
+
+    emitLoop(loopStart);
+
+    // at the end of the body, jump to increment, not the condition.
+    loopStart = incrementStart;
+
+    patchJump(bodyJump);
+  }
+
+  // body
+  statement();
+
+  emitLoop(loopStart);
+
+  if (exitJump != -1) {
+    patchJump(exitJump);
+    emit(OpCode::POP);
+  }
+
+  endScope();
 }
 
 void Parser::ifStatement() {

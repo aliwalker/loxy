@@ -61,7 +61,9 @@ InterpretResult LoxyVM::interpret(const char *source, const char *module) {
   auto mod = Module::create(*this, module);
 
   if (!(Compiler::compileModule(*this, source, *mod))) {
-    currModule = static_cast<Module*>(currModule->next);
+    if (currModule != nullptr && currModule->next != nullptr) {
+      currModule = dynamic_cast<Module*>(currModule->next);
+    }
     return InterpretResult::Compile_Error;
   }
   
@@ -72,26 +74,44 @@ InterpretResult LoxyVM::interpret(const char *source, const char *module) {
   return run();
 }
 
+//--==== Helper functions ====--//
+
 static bool isFalsy(Value value) {
   return value.isNil() || (value.isBool() && !(bool)value);
 }
 
+static Value lessThen(Value a, Value b) {
+  assert(a.isNumber() && b.isNumber() && "both a & b must be numbers");
+  if ((double)a < (double)b) return Value::True;
+  return Value::False;
+}
+
+static Value greaterThen(Value a, Value b) {
+  if (lessThen(a, b) == Value::False) return Value::True;
+  return Value::False;
+}
+
+//--==========================--//
+
 InterpretResult LoxyVM::run() {
   auto chunk = currModule->getChunk();
+
 #ifdef DEBUG
   ChunkPrinter::printChunk(*chunk, "main");
-  printf("==========\n");
 #endif
 
-#define BIN_OP(op)  \
-  do { \
-    if (!peek(0).isNumber() || !peek(1).isNumber()) { \
-      runtimeError("Operands must be numbers.");  \
-      return InterpretResult::Runtime_Error;  \
-    } \
-    double b = (double)pop();  \
-    double a = (double)pop();  \
-    push(Value( a op b ));  \
+#define assert_numbers(a, b)                                        \
+  if (!(a).isNumber() || !(b).isNumber()) {                         \
+    runtimeError("Both operands must be numbers");                  \
+    return InterpretResult::Runtime_Error;                          \
+  }
+
+#define arithmetics(op)                                             \
+  do {                                                              \
+    Value b = pop(); Value a = pop();                               \
+    assert_numbers(a, b);                                           \
+    double result = (double)a op (double)b;                         \
+    push(Value(result));                                            \
   } while (false)
 
   while (true) {
@@ -157,8 +177,27 @@ InterpretResult LoxyVM::run() {
       break;
     }
 
-    case OpCode::GREATER: BIN_OP(>); break;
-    case OpCode::LESS: BIN_OP(<); break;
+    case OpCode::GREATER: {
+      Value b = pop();
+      Value a = pop();
+
+      assert_numbers(a, b);
+      push(greaterThen(a, b));
+      break;
+    }
+
+    case OpCode::LESS: {
+      Value b = pop();
+      Value a = pop();
+
+      assert_numbers(a, b);
+      push(lessThen(a, b));
+      break;
+    }
+
+    // arithmetics
+    //
+    // add is special
     case OpCode::ADD: {
       auto b = pop();
       auto a = pop();
@@ -179,9 +218,10 @@ InterpretResult LoxyVM::run() {
       break;
     }
 
-    case OpCode::SUBTRACT: BIN_OP(-); break;
-    case OpCode::MULTIPLY: BIN_OP(*); break;
-    case OpCode::DIVIDE: BIN_OP(/); break;
+    case OpCode::SUBTRACT:  arithmetics(-); break;
+    case OpCode::MULTIPLY:  arithmetics(*); break;
+    case OpCode::DIVIDE:    arithmetics(/); break;
+
     case OpCode::NOT: {
       Value v = pop();
       push(Value(isFalsy(v) ? Value::True : Value::False));
@@ -213,6 +253,12 @@ InterpretResult LoxyVM::run() {
       uint16_t offs = readShort();
 
       if (isFalsy(peek(0))) offset += offs;
+      break;
+    }
+
+    case OpCode::LOOP: {
+      uint16_t offs = readShort();
+      offset -= offs;
       break;
     }
 
