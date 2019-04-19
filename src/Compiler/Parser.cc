@@ -73,8 +73,56 @@ uint8_t Parser::makeConstant(Value value) {
   return (uint8_t)constant;
 }
 
-uint8_t Parser::parseVariable(const char *msg) {
+// only global variable names are stored.
+uint8_t Parser::identifierConstant(Token name) {
+  String *identifier = String::create(vm, name.start, name.length);
+  return makeConstant(Value(identifier, ValueType::String));
+}
 
+// parse a variable name 
+uint8_t Parser::declareVariable(const char *msg) {
+  consume(Tok::IDENTIFIER, msg);
+
+  if (functions->depth == 0) return declareGlobal();
+
+  return declareLocal();
+}
+
+uint8_t Parser::declareGlobal() {
+  return identifierConstant(previous);
+}
+
+uint8_t Parser::declareLocal() {
+  Token name = previous;
+  FunctionScope *function = functions;
+  int depth = function->depth;
+
+  // checks for conflicts.
+  for (int i = function->count - 1; i >= 0; i--) {
+    const Variable &var = function->getLocal(i);
+
+    // shadowing is fine.
+    if (var.depth < depth)  break;
+    if (identifiersEqual(name, var.name)) {
+      // TODO: print this name
+      error("Variable with this name has already been declared in this scope");
+    }
+  }
+
+  // mark as declared.
+  function->createLocal(name);
+  return 0;
+}
+
+void Parser::defineVariable(uint8_t var) {
+  // global
+  if (functions->depth == 0) {
+    emit(OpCode::DEFINE_GLOBAL);
+    emit(var);  // index into the current chunk's constant table.
+  } else {
+    // mark the local variable as initialized.
+    functions->vars[functions->count - 1].depth = functions->depth;
+  }
 }
 
 // driver
@@ -118,9 +166,35 @@ void Parser::parsePrecedence(int prec) {
   }
 }
 
+void Parser::declaration() {
+  if (match(Tok::VAR)) {
+    varDeclaration();
+  }
+}
+
+void Parser::varDeclaration() {
+  // parse & declare this variable.
+  uint8_t global = declareVariable("expect variable name");
+
+  // initializer
+  if (match(Tok::EQUAL)) {
+    expression();
+  } else {
+    emit(OpCode::NIL);
+  }
+
+  // optional
+  match(Tok::SEMICOLON);
+
+  // define this variable.
+  defineVariable(global);
+}
+
 void Parser::statement() {
   if (match(Tok::FOR)) {
     forStatement();
+  } else if (match(Tok::WHILE)) {
+    whileStatement();
   } else if (match(Tok::IF)) {
     ifStatement();
   } else if (match(Tok::LEFT_BRACE)) {
@@ -201,6 +275,28 @@ void Parser::forStatement() {
   // pop condition.
   emit(OpCode::POP);
   endScope();
+}
+
+void Parser::whileStatement() {
+  // remember the position of loop start.
+  // loops always start at condition.  
+  int loopStart = currentChunk().size();
+  consume(Tok::LEFT_PAREN, "expect '(' after 'while'");
+  // condition.
+  expression();
+  consume(Tok::RIGHT_PAREN, "expect')' after while condition");
+
+  int exitJump = emitJump(OpCode::JUMP_IF_FALSE);
+  // pop condition.
+  emit(OpCode::POP);
+
+  // body.
+  statement();
+  emitLoop(loopStart);
+
+  patchJump(exitJump);
+  // pop condition.
+  emit(OpCode::POP);
 }
 
 void Parser::ifStatement() {

@@ -156,16 +156,17 @@ private:
 private:
   // methods have to do with variables.
   //
-  /// parseDeclaration - parses a variable name. Called on varDeclaration. 
-  ///   if the var being parsed is a global, stores it into
-  ///   global symTable and returns the index of it. Otherwise(var being a local)
-  ///   returns -1 and do nothing.
-  uint8_t parseVariable(const char *msg);
+  /// declareVariable - marks a variable as declared yet available for use.
+  ///   returns an index of the variable in appropriate table.
+  uint8_t declareVariable(const char *msg);
 
-  /// declareVariable - "declares" the current token as variable yet usable.
-  void declareVariable();
+  /// declareLocal - declares a local variable.
+  uint8_t declareLocal();
 
-  /// defineVariable - "defines" [var] as a variable. Vars are usable after "being defined".
+  /// declareGlobal - declares a global variable.
+  uint8_t declareGlobal();
+
+  /// defineVariable - marks a declared variable as available.
   void defineVariable(uint8_t var);
 
   /// resolveLocal - resolves to a local variable if there is one. Returns the index of it
@@ -174,10 +175,10 @@ private:
 
   /// identifierConstant - stores [name] which is an identifier, as a constant to
   ///   [currentChunk]'s constant table.
-  uint8_t identifierConstant(Token &name);
+  uint8_t identifierConstant(Token name);
 
   /// identifiersEqual - returns true if [name1] & [name2] are considered equal.
-  bool identifiersEqual(Token &name1, Token &name2);
+  bool identifiersEqual(const Token &name1, const Token &name2);
 
   /// markInitialized - marks the current local variable as "ready for use".
   ///   This is called by [defineVariable].
