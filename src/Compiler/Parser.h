@@ -31,8 +31,8 @@ private:
 
   Chunk *currentChunk_;
 
-  class Scope;
-  Scope *currentScope;
+  class FunctionScope;
+  FunctionScope *functions;
 
 public:
 
@@ -58,8 +58,9 @@ private:
     int precedence;
   };
 
-  /// struct Local - represents local variables.
-  struct Local {
+  // struct Variable - represents local variables accessible by function scope.
+  //  top-level variable is not represented by this struct.
+  struct Variable {
     // The name token that contains source info.
     Token name;
 
@@ -68,20 +69,28 @@ private:
     int   depth = -1;
   };
 
-  /// class ScopeInfo - bookkeeping info of lexical scopes used
-  ///   by Parser.
-  class ScopeInfo {
-  private:
+  // class FunctionScope - one scope stack per function.
+  class FunctionScope {
+  public:
     // local variables stacked by scope
-    Local vars[UINT8_MAX];
+    // TODO: maybe more local variables?
+    Variable vars[UINT8_MAX];
     
     // count of [vars]
-    int count = 0;
+    int count;
 
     // current depth.
-    int depth = 0;
+    int depth;
 
+    // enclosing function.
+    FunctionScope *enclosing;
+
+    // TODO:
+    // current function being compiled.
+    // Function *function;
   public:
+
+    FunctionScope() : count(0), depth(0) {}
 
     // marks a local variable comes into scope yet available.
     int createLocal(Token name) {
@@ -99,40 +108,21 @@ private:
     }
 
     // reads a local variable at [index].
-    const Local &getLocal(uint8_t index) const {
+    const Variable &getLocal(uint8_t index) const {
       assert(index < count && "Getting variable out of scope!");
       assert(vars[index].depth != -1 && "Getting variable not initialized yet!");
       return vars[index];
     }
 
-    // called when entered a new lexical scope.
-    void pushScope() { depth++; }
+    // pops [n] local variables.
+    void pop(size_t n) {
+      assert(count > n && "Popping too many variables!");
+      count -= n;
 
-    // called when current scope ends.
-    // returns the number of locals that should be popped.
-    int popScope() {
-      assert(depth > 0 && "popScope called at top-level scope!");
-
-      int oldCount = count;
-      while (count > 0 && vars[count - 1].depth == depth) count--;
-
-      depth--;
-      return oldCount - count;
+      // reset depth.
+      depth = vars[count - 1].depth;
     }
   };  // class ScopeInfo
-
-  // class Scope - a new scope is created when parser enters a new
-  //  function body.
-  class Scope {
-  public:
-    // enclosing function of current function.
-    Scope *enclosing;
-
-    ScopeInfo scopeInfo;
-
-    // TODO:
-    // Function *function;
-  }; // class Scope
 
 private:
 
@@ -145,6 +135,22 @@ private:
   Chunk &currentChunk() const {
     assert(currentChunk_ != nullptr && "Current chunk must not be nullptr");
     return *currentChunk_;
+  }
+
+  // beginScope - called when parser enters a new lexical scope, in current parsing function.
+  void beginScope() { functions->depth++; }
+
+  // endScope - called when parser exists current lexical scope.
+  void endScope() {
+    FunctionScope *current = functions;
+    int varCount = 0;
+    int depth = current->depth;
+
+    while (current->count > 0 && current->getLocal(varCount - 1).depth >= depth) {
+      varCount++;
+    }
+    
+    current->pop(varCount);
   }
 
 private:
@@ -237,7 +243,8 @@ private:
   void emitLoop(int loopStart) {
     emit(OpCode::LOOP);
 
-    int offset = currentChunk().size() - loopStart + 2;
+    // take account into the extra 2-byte for LOOP's arg.
+    int offset = currentChunk().size() + 2 - loopStart;
     if (offset > UINT16_MAX) error("Loop body too large");
 
     // high bits

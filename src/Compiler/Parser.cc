@@ -118,8 +118,163 @@ void Parser::parsePrecedence(int prec) {
   }
 }
 
-void Parser::or_(bool _) {
+void Parser::statement() {
+  if (match(Tok::FOR)) {
+    forStatement();
+  } else if (match(Tok::IF)) {
+    ifStatement();
+  } else if (match(Tok::LEFT_BRACE)) {
+    // push a new lexical scope
+    beginScope();
+    block();
+    endScope();
+  } else {
+    expressionStatement();
+  }
+}
 
+void Parser::forStatement() {
+  beginScope();
+
+  consume(Tok::LEFT_PAREN, "expect '(' after 'for'");
+
+  // init statement
+  if (match(Tok::VAR))  varDeclaration();
+  else if (match(Tok::SEMICOLON)) {
+
+  } else {
+    // expressionStatement optionally consumes ';'.
+    // but this is a must here.
+    expression();
+    consume(Tok::SEMICOLON, "expect ';' after initial ");
+    emit(OpCode::POP);
+  }
+
+  // remember the position of the start of the loop such that
+  // we can jump back here later.
+  // loops always start at conditions.
+  int loopStart = currentChunk().size();
+
+  // remember the position of the start of the increment such that
+  // we can jump back here later.
+  int incrStart;
+
+  // condition.
+  if (!check(Tok::SEMICOLON)) {
+    expression();
+  } else {
+    // if no condition expression is specified,
+    // treat it as an infinite loop.
+    emit(OpCode::TRUE);
+  }
+
+  consume(Tok::SEMICOLON, "expect ';' after condition");
+
+  int exitLoop = emitJump(OpCode::JUMP_IF_FALSE);
+  
+  // pop condition.
+  emit(OpCode::POP);
+
+  // increment.
+  if (!check(Tok::RIGHT_PAREN)) {
+    incrStart = currentChunk().size();
+    expression();
+    emit(OpCode::POP);
+    // loop back to condition
+    emitLoop(loopStart);
+  } else {
+    // points back to condition instead.
+    incrStart = loopStart;
+  }
+
+  consume(Tok::RIGHT_PAREN, "expect ')' after 'for' loop");
+
+  // body
+  statement();
+
+  // always loop to increment
+  emitLoop(incrStart);
+
+  // exit
+  patchJump(exitLoop);
+
+  // pop condition.
+  emit(OpCode::POP);
+  endScope();
+}
+
+void Parser::ifStatement() {
+  consume(Tok::LEFT_PAREN, "expect '(' after 'if'");
+  
+  // condition
+  expression();
+  consume(Tok::RIGHT_PAREN, "expect ')' after condition");
+
+  int elseJump = emitJump(OpCode::JUMP_IF_FALSE);
+
+  // pop condition.
+  emit(OpCode::POP);
+
+  // then body.
+  statement();
+
+  // jump over the else body.
+  int endJump = emitJump(OpCode::JUMP);
+
+  // if condition is false, jump to bytecode below.
+  patchJump(elseJump);
+
+  // pop condition.
+  emit(OpCode::POP);
+
+  // else body
+  if (match(Tok::ELSE)) {
+    statement();
+  }
+  patchJump(endJump);
+}
+
+void Parser::block() {
+  while (!check(Tok::RIGHT_BRACE)) {
+    declaration();
+  }
+
+  consume(Tok::RIGHT_BRACE, "expect '}' after block");
+}
+
+void Parser::expressionStatement() {
+  expression();
+  match(Tok::SEMICOLON);
+  emit(OpCode::POP);
+}
+
+// printStatement := "print" expression ;
+void Parser::printStatement() {
+  emit(OpCode::PRINT);
+  expression();
+  match(Tok::SEMICOLON);
+  emit(OpCode::POP);
+}
+
+// parse from lowest possible precedence expression
+void Parser::expression() {
+  parsePrecedence(static_cast<int>(Precedence::ASSIGNMENT));
+}
+
+// infix
+void Parser::or_(bool _) {
+  int elseJump = emitJump(OpCode::JUMP_IF_FALSE);
+  
+  // ends with lhs
+  int endJump = emitJump(OpCode::JUMP);
+
+  patchJump(elseJump);
+
+  emit(OpCode::POP);
+
+  // rhs
+  parsePrecedence(static_cast<int>(Precedence::OR));
+  patchJump(endJump);
 }
 
 // infix
