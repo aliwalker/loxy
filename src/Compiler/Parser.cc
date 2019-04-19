@@ -63,6 +63,36 @@ Parser::ParseRule Parser::rules[] = {
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::EOF
 };
 
+// helpers for updating parser's internal state
+//
+void Parser::advance() {
+  previous = current;
+
+  while (true) {
+    current = scanner.scanToken();
+    if (current.type != Tok::ERROR) break;
+    errorAtCurrent(current.start);
+  }
+}
+
+void Parser::consume(Tok type, const char *msg) {
+  if (check(type)) {
+    advance();
+    return;
+  }
+
+  errorAtCurrent(msg);
+}
+
+bool Parser::check(Tok type) {
+  return current.type == type;
+}
+
+bool Parser::match(Tok type) {
+  if (check(type)) { advance(); return true; }
+  return false;
+}
+
 uint8_t Parser::makeConstant(Value value) {
   int constant = currentChunk().addConstant(value);
 
@@ -77,6 +107,14 @@ uint8_t Parser::makeConstant(Value value) {
 uint8_t Parser::identifierConstant(Token name) {
   String *identifier = String::create(vm, name.start, name.length);
   return makeConstant(Value(identifier, ValueType::String));
+}
+
+bool Parser::identifiersEqual(const Token &a, const Token &b) {
+  assert(a.type == Tok::IDENTIFIER && b.type == Tok::IDENTIFIER && "Comparing identifiers!");
+  
+  if (a.length != b.length) return false;
+
+  return memcmp(a.start, b.start, a.length) == 0;
 }
 
 // parse a variable name 

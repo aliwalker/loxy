@@ -90,7 +90,9 @@ private:
     // Function *function;
   public:
 
-    FunctionScope() : count(0), depth(0) {}
+    FunctionScope(FunctionScope *enclosing = nullptr, int depth = 0)
+      : count(0), depth(depth),
+        enclosing(enclosing) {}
 
     // marks a local variable comes into scope yet available.
     int createLocal(Token name) {
@@ -153,6 +155,26 @@ private:
     current->pop(varCount);
   }
 
+  void beginFunction(FunctionScope *function) {
+    function->enclosing = functions;
+    function->count = 0;
+
+    if (functions != nullptr) {
+      function->depth = functions->depth;
+    } else {
+      function->depth = 0;
+    }
+
+    // TODO: add function's type.
+  }
+
+  void endFunction() {
+    emitReturn();
+    functions = functions->enclosing;
+
+    // TODO: return the function Object.
+  }
+
 private:
   // methods have to do with variables.
   //
@@ -177,12 +199,8 @@ private:
   ///   [currentChunk]'s constant table.
   uint8_t identifierConstant(Token name);
 
-  /// identifiersEqual - returns true if [name1] & [name2] are considered equal.
-  bool identifiersEqual(const Token &name1, const Token &name2);
-
-  /// markInitialized - marks the current local variable as "ready for use".
-  ///   This is called by [defineVariable].
-  void markInitialized();
+  /// identifiersEqual - compares the chars contained in [a] & [b].
+  bool identifiersEqual(const Token &a, const Token &b);
 
 private:
     // Top-down parsers for statements.
@@ -219,10 +237,11 @@ private:
 
   // helpers for updating internal parser states.
   //
-  void initParser(Chunk *chunk);
+  //void initParser(Chunk *chunk);
   void advance();
+  // compelling helper for matching current token with [type].
   void consume(Tok type, const char *msg);
-  void endParser();
+  // non-compelling helper for matching current token with [type].
   bool match(Tok type);
   bool check(Tok type);
 
