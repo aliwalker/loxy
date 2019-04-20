@@ -192,9 +192,10 @@ private:
   /// defineVariable - marks a declared variable as available.
   void defineVariable(uint8_t var);
 
-  /// resolveLocal - resolves to a local variable if there is one. Returns the index of it
-  ///   in [this->locals] if it exists; otherwise returns -1.
-  int resolveLocal(Token &name);
+  /// resolveLocal - called when parsing a variable expression.
+  //    returns -1 if not found. This method guarantees you don't use
+  //    uninitialized local variable.
+  int resolveLocal(const Token &name);
 
   /// identifierConstant - stores [name] which is an identifier, as a constant to
   ///   [currentChunk]'s constant table.
@@ -261,18 +262,7 @@ private:
   ///   with the number bytes to skip to current end of bytecode.
   void patchJump(int index);
 
-  void emitLoop(int loopStart) {
-    emit(OpCode::LOOP);
-
-    // take account into the extra 2-byte for LOOP's arg.
-    int offset = currentChunk().size() + 2 - loopStart;
-    if (offset > UINT16_MAX) error("Loop body too large");
-
-    // high bits
-    emit((offset >> 8) & 0xff);
-    // low bits
-    emit(offset & 0xff);
-  }
+  void emitLoop(int loopStart);
 
   // error handling.
   //
@@ -283,10 +273,6 @@ private:
   /// synchronize - synchronizes current parsing error by discarding some
   ///   tokens.
   void synchronize();
-
-  // scope handler.
-  void beginScope();
-  void endScope();
 }; // class Parser
 
 } // namespace loxy

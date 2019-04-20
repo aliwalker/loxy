@@ -109,42 +109,42 @@ enum class Precedence : int {
 };
 
 Parser::ParseRule Parser::rules[] = {
-  { Parser::grouping, nullptr,        static_cast<int>(Precedence::CALL) },       // Tok::LEFT_PAREN
+  { &Parser::grouping, nullptr,        static_cast<int>(Precedence::CALL) },       // Tok::LEFT_PAREN
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::RIGHT_PAREN
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::LEFT_BRACE
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::RIGHT_BRACE
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::COMMA
   { nullptr,          nullptr,        static_cast<int>(Precedence::CALL) },       // Tok::DOT
-  { Parser::unary,    Parser::binary, static_cast<int>(Precedence::TERM) },       // Tok::MINUS
-  { nullptr,          Parser::binary, static_cast<int>(Precedence::TERM) },       // Tok::PLUS
+  { &Parser::unary,   &Parser::binary, static_cast<int>(Precedence::TERM) },       // Tok::MINUS
+  { nullptr,          &Parser::binary, static_cast<int>(Precedence::TERM) },       // Tok::PLUS
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::SEMICOLON
-  { nullptr,          Parser::binary, static_cast<int>(Precedence::FACTOR) },     // Tok::SLASH
-  { nullptr,          Parser::binary, static_cast<int>(Precedence::FACTOR) },     // Tok::STAR
-  { Parser::unary,    nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::BANG
-  { nullptr,          Parser::binary, static_cast<int>(Precedence::EQUALITY) },   // Tok::BANG_EQUAL
+  { nullptr,          &Parser::binary, static_cast<int>(Precedence::FACTOR) },     // Tok::SLASH
+  { nullptr,          &Parser::binary, static_cast<int>(Precedence::FACTOR) },     // Tok::STAR
+  { &Parser::unary,    nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::BANG
+  { nullptr,          &Parser::binary, static_cast<int>(Precedence::EQUALITY) },   // Tok::BANG_EQUAL
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::EQUAL
-  { nullptr,          Parser::binary, static_cast<int>(Precedence::EQUALITY) },   // Tok::EQUAL_EQUAL
-  { nullptr,          Parser::binary, static_cast<int>(Precedence::COMPARISON) }, // Tok::GREATER
-  { nullptr,          Parser::binary, static_cast<int>(Precedence::COMPARISON) }, // Tok::GREATER_EQUAL
-  { nullptr,          Parser::binary, static_cast<int>(Precedence::COMPARISON) }, // Tok::LESS
-  { nullptr,          Parser::binary, static_cast<int>(Precedence::COMPARISON) }, // Tok::LESS_EQUAL
-  { Parser::variable, nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::IDENTIFIER
-  { Parser::string,   nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::STRING
-  { Parser::number,   nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::NUMBER
-  { nullptr,          Parser::and_,   static_cast<int>(Precedence::AND) },        // Tok::AND
+  { nullptr,          &Parser::binary, static_cast<int>(Precedence::EQUALITY) },   // Tok::EQUAL_EQUAL
+  { nullptr,          &Parser::binary, static_cast<int>(Precedence::COMPARISON) }, // Tok::GREATER
+  { nullptr,          &Parser::binary, static_cast<int>(Precedence::COMPARISON) }, // Tok::GREATER_EQUAL
+  { nullptr,          &Parser::binary, static_cast<int>(Precedence::COMPARISON) }, // Tok::LESS
+  { nullptr,          &Parser::binary, static_cast<int>(Precedence::COMPARISON) }, // Tok::LESS_EQUAL
+  { &Parser::variable, nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::IDENTIFIER
+  { &Parser::string,   nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::STRING
+  { &Parser::number,   nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::NUMBER
+  { nullptr,          &Parser::and_,   static_cast<int>(Precedence::AND) },        // Tok::AND
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::CLASS
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::ELSE
-  { Parser::atom,     nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::FALSE
+  { &Parser::atom,     nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::FALSE
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::FOR
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::FUN
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::IF
-  { Parser::atom,     nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::NIL
-  { nullptr,          Parser::or_,    static_cast<int>(Precedence::OR) },         // Tok::OR
+  { &Parser::atom,     nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::NIL
+  { nullptr,          &Parser::or_,    static_cast<int>(Precedence::OR) },         // Tok::OR
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::PRINT
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::RETURN
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::SUPER
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::THIS
-  { Parser::atom,     nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::TRUE
+  { &Parser::atom,     nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::TRUE
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::VAR
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::WHILE
   { nullptr,          nullptr,        static_cast<int>(Precedence::NONE) },       // Tok::ERROR
@@ -231,13 +231,25 @@ uint8_t Parser::declareLocal() {
     if (var.depth < depth)  break;
     if (identifiersEqual(name, var.name)) {
       // TODO: print this name
-      error("Variable with this name has already been declared in this scope");
+      error("variable with this name has already been declared in this scope");
     }
   }
 
   // mark as declared.
   function->createLocal(name);
   return 0;
+}
+
+int Parser::resolveLocal(const Token &name) {
+  for (int i = functions->count; i >= 0; i--) {
+    if (identifiersEqual(functions->getLocal(i).name, name)) {
+      if (functions->getLocal(i).depth == -1) {
+        error("cannot read an uninitialized local variable");
+      }
+      return i;
+    }
+  }
+  return -1;
 }
 
 void Parser::defineVariable(uint8_t var) {
