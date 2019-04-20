@@ -1,3 +1,7 @@
+#include <iostream>
+#include <cstring>
+#include <string>
+#include <sstream>
 #include "Parser.h"
 #include "VM/Value.h"
 
@@ -24,6 +28,67 @@ bool Parser::parse(Chunk *compilingChunk, const char *source) {
   }
   
   return hadError;
+}
+
+static std::string printSrc(const Token &token, int idents) {
+  std::stringstream ss;
+
+  for (int i = 0; i < idents; i++) ss << "\t";
+
+  if (token.type == Tok::_EOF) {
+    ss << "end of the file";
+    return ss.str();
+  }
+
+  for (int i = 0; token.start[i] != '\0' && token.start[i] != '\n'; i++) {
+    ss << token.start[i];
+  }
+  return ss.str();
+}
+
+void Parser::errorAt(const Token &token, const char *msg) {
+  // don't report errors found in panic mode.
+  if (panicMode)  return;
+
+  panicMode = true;
+
+  std::cerr << "[line " << token.line 
+    << "] compilation error at\n"
+    << printSrc(token, 1) << "\n"
+    << msg << "\n";
+}
+
+void Parser::error(const char *msg) {
+  errorAt(previous, msg);
+}
+
+void Parser::errorAtCurrent(const char *msg) {
+  errorAt(current, msg);
+}
+
+void Parser::synchronize() {
+  panicMode = false;
+
+  while (current.type != Tok::_EOF) {
+    if (previous.type == Tok::SEMICOLON)  return;
+
+    switch (current.type)
+    {
+    // these keywords starts a new declaration/statement.
+    case Tok::CLASS:
+    case Tok::FUN:
+    case Tok::VAR:
+    case Tok::FOR:
+    case Tok::IF:
+    case Tok::WHILE:
+    case Tok::PRINT:
+    case Tok::RETURN:
+      return;
+    
+    default:  ;
+    }
+    advance();
+  }
 }
 
 // precedence of expression.
@@ -290,7 +355,12 @@ void Parser::parsePrecedence(int prec) {
 void Parser::declaration() {
   if (match(Tok::VAR)) {
     varDeclaration();
+  } else {
+    // top-level statement
+    statement();
   }
+
+  if (panicMode)  synchronize();
 }
 
 void Parser::varDeclaration() {
