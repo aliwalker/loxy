@@ -3,6 +3,29 @@
 
 namespace loxy {
 
+Parser::Parser(VM &vm, Scanner &scanner)
+  : vm(vm), scanner(scanner),
+    hadError(false), panicMode(false),
+    currentChunk_(nullptr), functions(nullptr) {}
+
+bool Parser::parse(Chunk *compilingChunk, const char *source) {
+  currentChunk_ = compilingChunk;
+  scanner.init(source);
+
+  // begin a new function here.
+  FunctionScope function;
+  beginFunction(&function);
+
+  // initialize [current] with the first token.
+  advance();
+
+  while (!match(Tok::_EOF)) {
+    declaration();
+  }
+  
+  return hadError;
+}
+
 // precedence of expression.
 enum class Precedence : int {
   NONE,        // lowest precedence
@@ -163,7 +186,67 @@ void Parser::defineVariable(uint8_t var) {
   }
 }
 
-// driver
+// emitters
+void Parser::emit(uint8_t byte) {
+  currentChunk().write(byte, previous.line);
+}
+
+void Parser::emit(OpCode op) {
+  emit(static_cast<uint8_t>(op));
+}
+
+void Parser::emitReturn() {
+  // TODO:
+  // implicit return for initializer
+
+  emit(OpCode::RETURN);
+}
+
+void Parser::emitConstant(Value value) {
+  emit(OpCode::CONSTANT);
+  // the index into the currentChunk's constant pool.
+  emit(makeConstant(value));
+}
+
+int Parser::emitJump(OpCode jumpInst) {
+  emit(jumpInst);
+  // args of type uint16_t
+  emit(0xff);
+  emit(0xff);
+  // returns the index into the bytecode for this 
+  return currentChunk().size() - 2;
+}
+
+void Parser::emitLoop(int loopStart) {
+  emit(OpCode::LOOP);
+
+  // calculate the offset from current to [loopStart]
+  // such that when vm encounters OpCode::LOOP, it simply
+  // reads the next 2 bytes as the offset and subtract it by
+  // the instruction pointer.
+
+  // the extra 2 bytes are reserved for arg of OpCode::LOOP
+  int offset = currentChunk().size() + 2 - loopStart;
+  if (offset > UINT16_MAX)  error("loop body too large");
+
+  // big endian
+  emit((offset >> 8) & 0xff);
+  emit(offset & 0xff);
+}
+
+void Parser::patchJump(int index) {
+  // the index points to the start of the first byte of OpCode::JUMP's
+  // arg. When the vm encounters OpCode::JUMP or OpCode::JUMP_IF_FALSE,
+  // it has already advanced the instruction pointer 2 bytes further.
+  int offset = currentChunk().size() - index - 2;
+  if (offset > UINT16_MAX)  error("jump too far");
+
+  // big endian
+  currentChunk().code[index] = (offset >> 8) & 0xff;
+  currentChunk().code[index + 1] = offset &0xff;
+}
+
+// driver for expressions
 // called on previous token that was consumed & it must be
 // a prefix expression.
 void Parser::parsePrecedence(int prec) {

@@ -40,9 +40,10 @@ public:
   ///   internal states. Source can be nullptr for convenience.
   Parser(VM &vm, Scanner &scanner);
 
+  // TODO: return [Function].
   /// parse - main interface for parsing [source] code and emitting
   ///   corresponding bytecode to [compilingChunk].
-  bool parse(Chunk &compilingChunk, const char *source);
+  bool parse(Chunk *compilingChunk, const char *source);
 
 private:
   // data types for compiling.
@@ -258,7 +259,7 @@ private:
 
   /// patchJump - replaces the jump instruction's arg(resides in [offset]) 
   ///   with the number bytes to skip to current end of bytecode.
-  void patchJump(int offset);
+  void patchJump(int index);
 
   void emitLoop(int loopStart) {
     emit(OpCode::LOOP);
