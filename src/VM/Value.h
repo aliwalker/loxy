@@ -120,11 +120,6 @@ public:
 // managed smart pointers.
 
 typedef uint32_t Hash;
-typedef std::map<String*, Value> SymbolTable;
-typedef std::map<Hash, String*> StringPool;
-
-// // global string pool.
-// StringPool stringPool;
 
 /// class Object - based object type inherited by every Loxy object.
 class Object {
@@ -158,8 +153,6 @@ private:
   int length;
   Hash hash_;
 
-  static Hash hashString(const char *s);
-
 public:
 
   String(std::unique_ptr<char> chars, int length, Hash hash) :
@@ -169,12 +162,15 @@ public:
 
   std::string toString() const { return this->chars.get(); }
 
-  String* concat(VM &vm, String* another);
-
-  /// create - called by VM. creates a loxy string object. 
-  ///   [chars] will not be owned by String.
+  // create - called by Parser/VM to create a loxy string object.
+  //  note that this function takes care of interning strings.
   static String* create(VM &vm, const char *chars, int length = -1);
+  
+  // called by [create] to figure out the hash value.
+  static Hash hashString(const char *s, int length);
 };  // class tring.
+
+typedef std::map<String*, Value> SymbolTable;
 
 /// class Module - each loxy file is a module.
 class Module : public Object {
@@ -214,7 +210,7 @@ public:
     return std::string("[module ") + name.toString() + "]";
   }
 
-  static Module* create(VM &vm, const char *name);
+  static Module* create(VM &vm, String *name);
 };  // class Module
 
 

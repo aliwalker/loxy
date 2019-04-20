@@ -1,6 +1,7 @@
 #ifndef loxy_vm_h
 #define loxy_vm_h
 
+#include <map>
 #include <vector>
 #include "Common.h"
 #include "Chunk.h"
@@ -13,6 +14,9 @@ class Value;
 class Object;
 class String;
 class Module;
+
+typedef uint32_t Hash;
+typedef std::map<Hash, String*> StringPool;
 
 enum class InterpretResult {
   Ok,
@@ -31,6 +35,8 @@ private:
   std::vector<Value> stack;
   Object *first;
 
+  StringPool pool;
+
 public:
   /// Interpret - interprets the [source] code, in the context of [module].
   InterpretResult interpret(const char *source, const char *module);
@@ -44,6 +50,11 @@ public:
   /// loadModule - loads a module of [name].
   Module *loadModule(const char *name);
 
+  // findString - finds a String object from underlying string pool.
+  String *findString(const char *chars, int length, uint32_t hash);
+
+  // addString - adds the give string to string pool.
+  void addString(String *string);
 private:
 
   void runtimeError(const char *format, ...);
