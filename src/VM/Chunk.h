@@ -38,7 +38,7 @@ public:
   constexpr size_t size() const noexcept { return code.size(); }
   
   /// addConstant - adds [value] to its constant pool & returns the index
-  ///   of the added value in the pool.
+  ///   of it in the pool.
   int addConstant(Value value);
 
   /// getConstants - returns the constant value at [index].
