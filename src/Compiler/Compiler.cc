@@ -5,14 +5,16 @@
 
 namespace loxy {
 
-std::unique_ptr<Chunk> Compiler::compile(VM &vm, const char *source) {
+Chunk *Compiler::compile(VM &vm, const char *source) {
   Parser parser(vm);
-  std::unique_ptr<Chunk> currentChunk = std::make_unique<Chunk>();
+  Chunk *chunk = Chunk::create(vm);  
 
-  if (parser.parse(currentChunk.get(), source)) {
-    return currentChunk;
+  if (parser.parse(chunk, source)) {
+    return chunk;
   }
 
+  // failed to compile, free resources.
+  Chunk::destroy(chunk);
   return nullptr;
 }
 

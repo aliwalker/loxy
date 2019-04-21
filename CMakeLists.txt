@@ -7,6 +7,7 @@ set(SOURCES
     src/Compiler/Parser.cc
     src/VM/Chunk.cc
     src/VM/Value.cc
+    src/VM/Module.cc
     )
 
 set (CMAKE_CXX_STANDARD 14)

@@ -1,5 +1,5 @@
 #include <cstring>
-#include <string>
+#include <sstream>
 #include "Value.h"
 #include "VM.h"
 
@@ -18,15 +18,19 @@ Value::operator String* () const {
   return static_cast<String*>((Object*)(*this));
 }
 
-std::string Value::toString() const {
+const char *Value::cString() const {
   switch (type) {
-  case ValueType::Bool:   return bool(*this) ? std::string("true") : std::string("false");
-  case ValueType::Number: return std::to_string((double)(*this));
+  case ValueType::Bool:   return bool(*this) ? "true" : "false";
+  case ValueType::Number: {
+    std::stringstream ss;
+    ss << (double)(*this);
+    return ss.str().c_str();
+  }
   case ValueType::Nil:    return "nil";
   case ValueType::Undef:  return "undef";
 
   case ValueType::String:
-  case ValueType::Obj:    return ((Object*)(*this))->toString();
+  case ValueType::Obj:    return ((Object*)(*this))->cString();
   }
 }
 

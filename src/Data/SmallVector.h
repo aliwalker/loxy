@@ -1,15 +1,16 @@
 #ifndef loxy_small_vector_h
 #define loxy_small_vector_h
 
+#include "Common.h"
+#include "Managed.h"
 #include "VM/VM.h"
 
 namespace loxy {
 
-//class VM;
-
 // class SmallVector - a vector class used by Loxy's VM.
+//  T must be primitive types or pointer types.
 template<typename T>
-class SmallVector {
+class SmallVector : public Managed {
 public:
   static const size_t MIN_CAP = 8;
   static const size_t GROW_PERCENT = 2;
@@ -21,14 +22,41 @@ private:
 
   // underlying blob of memory
   T *buffer_;
-public:
 
   explicit SmallVector(VM &vm, size_t cap = MIN_CAP)
   : vm(vm),
     count_(0),
-    capacity_(cap < MIN_CAP ? MIN_CAP : cap),
+    capacity_(0),
     buffer_(nullptr) {
     ensureCapacity(cap < MIN_CAP ? MIN_CAP : cap);
+  }
+
+public:
+
+  // creates a VM managed SmallVector instance.
+  static SmallVector<T> *create(VM &vm, size_t cap = MIN_CAP) {
+    void *mem = vm.reallocate(nullptr, 0, sizeof(SmallVector<T>));
+
+    assert(mem != nullptr && "Out of memory");
+    return ::new(mem) SmallVector<T>(vm, cap);
+  }
+
+  static void destroy(VM &vm, SmallVector<T> **vector) {
+    if (*vector == nullptr) return;
+
+    // free buffer_
+    vm.reallocate((*vector)->buffer_, (*vector)->capacity_ * sizeof(T), 0);
+    (*vector)->count_ = 0;
+    (*vector)->capacity_ = 0;
+    (*vector)->buffer_ = nullptr;
+
+    // free the vector itself
+    vm.reallocate(*vector, sizeof(SmallVector<T>), 0);
+    (*vector) = nullptr;
+  }
+
+  void freeChildren() {
+    vm.reallocate(buffer_, capacity_ * sizeof(T), 0);
   }
 
   int count() const { return count_; }

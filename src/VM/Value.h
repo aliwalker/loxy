@@ -4,13 +4,14 @@
 #include <map>
 #include <set>
 #include <string>
-#include <cassert>
 #include <cstring>
 #include <memory>
 #include "Common.h"
+#include "Managed.h"
 
 namespace loxy {
 
+class Managed;
 class Object;
 class String;
 class Module;
@@ -53,7 +54,7 @@ public:
   static const Value True;
   static const Value False;
 
-  std::string toString() const;
+  const char *cString() const;
 
   uint32_t hash();
 
@@ -109,55 +110,34 @@ public:
 
 // Object representations.
 //
-// Objects are garbage collected, while resources used by compiler are
-// managed via smart pointers.
+class Object : Managed {
+public:
+  virtual const char *cString() const { return "[Loxy Object]"; };
+};
 
 typedef uint32_t Hash;
-
-/// class Object - based object.
-class Object {
-public:
-
-  bool    isDark;
-  Object  *next;
-
-  Object() : isDark(false), next(nullptr) {}
-
-  virtual std::string toString() const { return "[Object]"; }
-
-private:
-  // object allocations should be prevented.
-  void * operator new   (size_t) = delete;
-  void * operator new[] (size_t) = delete;
-  void   operator delete   (void *) = delete;
-  void   operator delete[] (void*) = delete;
-
-  // avoid copy.
-  Object(const Object&) = delete;
-  Object& operator=(const Object &) = delete;
-};
 
 /// String - string class.
 class String : public Object {
 private:
 
-  // auto managed chars.
+  // TODO: change this for consistency.
   std::unique_ptr<char> chars;
   int length;
   Hash hash_;
 
-public:
-
   String(std::unique_ptr<char> chars, int length, Hash hash) :
     chars(std::move(chars)), length(length), hash_(hash) {}
 
-  Hash hash() const { return hash_; }
-
-  std::string toString() const { return this->chars.get(); }
+public:
 
   // create - called by Parser/VM to create a loxy string object.
   //  note that this function takes care of interning strings.
   static String* create(VM &vm, const char *chars, int length = -1);
+
+  Hash hash() const { return hash_; }
+
+  const char *cString() const { return chars.get(); }
   
   // called by [create] to figure out the hash value.
   static Hash hashString(const char *s, int length);

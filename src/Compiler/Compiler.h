@@ -14,7 +14,7 @@ class Compiler {
 public:
 
   // compiles [source] & returns a Chunk containing bytecode
-  static std::unique_ptr<Chunk> compile(VM &vm, const char *source);
+  static Chunk *compile(VM &vm, const char *source);
 };
 
 } // namespace loxy

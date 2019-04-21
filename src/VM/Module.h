@@ -1,9 +1,10 @@
 #ifndef loxy_module_h
 #define loxy_module_h
 
-#include <vector>
 #include <map>
 #include <memory>
+#include "Data/SmallVector.h"
+#include "Managed.h"
 
 namespace loxy {
 
@@ -14,14 +15,20 @@ class VM;
 
 typedef std::map<String*, Value> SymbolTable;
 
-class Module {
-public:
+class Module : public Managed {
+private:
 
-  Module(String *name, String *path, std::unique_ptr<char> src)
-  : name_(name),
+  Module(VM &vm, String *name, String *path, String *src, SmallVector<Module*> *imports)
+  : vm(vm),
+    name_(name),
     path_(path),
-    src_(std::move(src)),
-    bytecode_(nullptr) {}
+    src_(src),
+    bytecode_(nullptr),
+    imports_(imports) {}
+
+public:
+  static Module *create(VM &vm, String *name, String *path, String *src);
+  static void destroy(VM &vm, Module **module);
 
   // adds a top-level variable. Global variables can be redefined.
   void addVariable(String *name, Value initializer);
@@ -37,20 +44,22 @@ public:
   String *getPath() const { return path_; }
   void setPath(String *path) { path_ = path; }
 
-  void addImports(Module *module) { imports_.push_back(module); }
+  void addImports(Module *module) { imports_->push(module); }
 
   // compiles from [src_].
-  bool compile(VM &vm);
+  bool compile();
 
   // source code.
-  const char *getSrc() const { return src_.get(); }
-  void setSrc(std::unique_ptr<char> src) { src_ = std::move(src); }
+  const char *getSrc() const { return src_->cString(); }
+  void setSrc(String *src) { src_ = src; }
 
   // the compiled bytecode of this module.
-  const Chunk *getBody() const { return bytecode_.get(); }
-  void setBody(std::unique_ptr<Chunk> body) { bytecode_ = std::move(body); }
+  const Chunk *getBody() const { return bytecode_; }
+  void setBody(Chunk *body) { bytecode_ = body; }
 
 private:
+
+  VM &vm;
 
   // the name of module.
   String *name_;
@@ -59,16 +68,16 @@ private:
   String *path_;
 
   // source code of the module.
-  std::unique_ptr<char> src_;
+  String *src_;
 
   // the compiled bytecode.
-  std::unique_ptr<Chunk> bytecode_;
+  Chunk *bytecode_;
 
   // top-level variables.
   SymbolTable variables;
 
   // imported modules
-  std::vector<Module*> imports_;
+  SmallVector<Module*> *imports_;
 };
 
 } // namespace loxy
