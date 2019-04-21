@@ -37,6 +37,8 @@ public:
   // value will be written to [result] only when this method returns [true].
   bool getVariable(String *name, Value *result);
 
+  bool setVariable(String *name, Value value);
+
   // module's name.
   String *getName() const { return name_; }
   void setName(String *name) { name_ = name; }

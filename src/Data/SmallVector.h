@@ -11,6 +11,8 @@ namespace loxy {
 //  T must be primitive types or pointer types.
 template<typename T>
 class SmallVector : public Managed {
+  friend class VM;
+
 public:
   static const size_t MIN_CAP = 8;
   static const size_t GROW_PERCENT = 2;

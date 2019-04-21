@@ -21,20 +21,21 @@ class VM;
 
 // ValueType - type tag for each Value.
 enum class ValueType {
+  // Used internally.
+  Undef,
+
   Bool,
   Nil,
   Number,
   Obj,
   String,
-
-  // Used internally.
-  Undef,
 };
 
 union Variant {
   Variant(double n) : number(n) {}
   Variant(bool v) : boolean(v) {}
   Variant(Object *obj): obj(obj) {}
+  Variant() : obj(nullptr) {}
 
   bool boolean;
   double number;
@@ -48,6 +49,10 @@ private:
   Variant as;
 
 public:
+  Value() {}
+  Value(ValueType type, Variant as) : type(type), as(as) {}
+  Value(double number);
+  Value(Object *ref, ValueType type = ValueType::Obj);
 
   static const Value Nil;
   static const Value Undef;
@@ -82,7 +87,6 @@ public:
   }
 
   operator String* () const;
-  operator Module* () const;
 
   bool operator == (const Value &other) const {
     if (type != other.type) return false;
@@ -98,14 +102,14 @@ public:
     }
   }
 
+  bool operator > (const Value &other) const {
+    assert(type == ValueType::Number && other.type == ValueType::Number && "Ordering on non number values");
+    return (double)(*this) > (double)other;
+  }
+
   bool operator != (const Value &other) const {
     return !((*this) == other);
   }
-
-  Value(ValueType type, Variant as) : type(type), as(as) {}
-
-  Value(double number);
-  Value(Object *ref, ValueType type = ValueType::Obj);
 };
 
 // Object representations.

@@ -5,6 +5,7 @@ project(loxy)
 set(SOURCES
     src/Compiler/Scanner.cc
     src/Compiler/Parser.cc
+    src/Compiler/Compiler.cc
     src/VM/VM.cc
     src/VM/Chunk.cc
     src/VM/Value.cc

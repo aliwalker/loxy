@@ -6,12 +6,12 @@
 #include <stdint.h>
 #include <cassert>
 
-#define UINT8_COUNT (UINT8_MAX + 1)
+#define UINT8_COUNT         (UINT8_MAX + 1)
 #define HEAP_GROW_PERCENT   0.5
 #define INITIAL_HEAP_SIZE   1024
-#define MAX_TEMP_ROOTS  5
+#define MAX_TEMP_ROOTS      5
 
-// typedef unsigned int  size_t;
+#define STACK_MAX           256
 
 #define DEBUG
 #ifdef DEBUG

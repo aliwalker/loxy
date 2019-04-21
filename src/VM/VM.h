@@ -9,6 +9,9 @@
 
 namespace loxy {
 
+template<typename T>
+class SmallVector;
+
 class Chunk;
 class Value;
 class Object;
@@ -30,18 +33,17 @@ private:
   size_t nextGC;
 
   // loaded modules.
-  std::vector<Module*> modules_;
+  SmallVector<Module*> modules_;
 
-  std::vector<Value> stack;
   Object *first;
-
   StringPool pool;
 
 public:
   VM():
     allocatedBytes(0),
     nextGC(INITIAL_HEAP_SIZE),
-    first(nullptr) {}
+    first(nullptr),
+    modules_(*this) {}
 
   /// Interpret - interprets the [source] code, in the context of [module].
   InterpretResult interpret(const char *source, const char *module);
@@ -50,10 +52,12 @@ public:
   //  method.
   void *reallocate(void *prev, size_t oldSize, size_t newSize);
 
+private:
+
   void collectGarbage();
 
-  // run - runs currModule.
-  InterpretResult run();
+  // run - runs [module].
+  InterpretResult run(Module *module);
 
   // loadModule - loads a module of [name].
   Module *loadModule(const char *name);

@@ -14,7 +14,7 @@ Chunk *Compiler::compile(VM &vm, const char *source) {
   }
 
   // failed to compile, free resources.
-  Chunk::destroy(chunk);
+  Chunk::destroy(vm, &chunk);
   return nullptr;
 }
 
