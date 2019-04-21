@@ -21,7 +21,7 @@ enum class OpCode: uint8_t;
 class Parser {
 private:
 
-  Scanner &scanner;
+  Scanner *scanner_;
   VM      &vm;
 
   Token current;
@@ -32,13 +32,11 @@ private:
   Chunk *currentChunk_;
 
   class FunctionScope;
-  FunctionScope *functions;
+  FunctionScope *currentFunc_;
 
 public:
 
-  /// Parser - takes [source] as source code & initializes
-  ///   internal states. Source can be nullptr for convenience.
-  Parser(VM &vm, Scanner &scanner);
+  Parser(VM &vm);
 
   // TODO: return [Function].
   /// parse - main interface for parsing [source] code and emitting
@@ -141,11 +139,11 @@ private:
   }
 
   // beginScope - called when parser enters a new lexical scope, in current parsing function.
-  void beginScope() { functions->depth++; }
+  void beginScope() { currentFunc_->depth++; }
 
   // endScope - called when parser exists current lexical scope.
   void endScope() {
-    FunctionScope *current = functions;
+    FunctionScope *current = currentFunc_;
     int varCount = 0;
     int depth = current->depth;
 
@@ -157,11 +155,11 @@ private:
   }
 
   void beginFunction(FunctionScope *function) {
-    function->enclosing = functions;
+    function->enclosing = currentFunc_;
     function->count = 0;
 
-    if (functions != nullptr) {
-      function->depth = functions->depth;
+    if (currentFunc_ != nullptr) {
+      function->depth = currentFunc_->depth;
     } else {
       function->depth = 0;
     }
@@ -171,7 +169,7 @@ private:
 
   void endFunction() {
     emitReturn();
-    functions = functions->enclosing;
+    currentFunc_ = currentFunc_->enclosing;
 
     // TODO: return the function Object.
   }

@@ -6,8 +6,8 @@ namespace loxy {
 class Value;
 
 void Chunk::write(uint8_t byte, int line) {
-  code.push_back(byte);
-  lines.push_back(byte);
+  code.push(byte);
+  lines.push(byte);
 }
 
 void Chunk::clear() {
@@ -17,18 +17,14 @@ void Chunk::clear() {
 
 int Chunk::addConstant(Value value) {
   // check for existence.
-  for (auto i = constants.begin(); i != constants.end(); i++) {
-    if (*i == value) {
-      return i - constants.begin();
-    }
-  }
+  if (constants.indexOf(value) != -1) return constants.indexOf(value);
 
-  constants.push_back(value);
-  return constants.size() - 1;
+  constants.push(value);
+  return constants.count() - 1;
 }
 
 Value Chunk::getConstant(size_t index) const {
-  assert(index < constants.size() && "Index is too large in constant pool");
+  assert(index < constants.count() && "Index is too large in constant pool");
   return constants[index];
 }
 

@@ -1,6 +1,7 @@
 #include <cstring>
 #include <string>
 #include "Value.h"
+#include "VM.h"
 
 namespace loxy {
 
@@ -17,21 +18,15 @@ Value::operator String* () const {
   return static_cast<String*>((Object*)(*this));
 }
 
-Value::operator Module* () const {
-  assert(type == ValueType::Module);
-  return static_cast<Module*>((Object*)(*this));
-}
-
 std::string Value::toString() const {
   switch (type) {
-  case ValueType::Bool: return bool(*this) ? std::string("true") : std::string("false");
+  case ValueType::Bool:   return bool(*this) ? std::string("true") : std::string("false");
   case ValueType::Number: return std::to_string((double)(*this));
-  case ValueType::Nil: return "nil";
-  case ValueType::Undef: return "undef";
-  // reference types' toString is virtual.
+  case ValueType::Nil:    return "nil";
+  case ValueType::Undef:  return "undef";
+
   case ValueType::String:
-  case ValueType::Module:
-  case ValueType::Obj: return ((Object*)(*this))->toString();
+  case ValueType::Obj:    return ((Object*)(*this))->toString();
   }
 }
 
@@ -47,10 +42,9 @@ String *String::create(VM &vm, const char *chars, int length) {
   }
 
   // create & intern this new string.
+  void *mem = vm.reallocate(nullptr, 0, sizeof(String));
 
-  void *mem = vm.newObject(sizeof(String));
-
-  std::unique_ptr<char> rawStr(reinterpret_cast<char*>(vm.newObject(length + 1)));
+  std::unique_ptr<char> rawStr(reinterpret_cast<char*>(vm.reallocate(nullptr, 0, length + 1)));
   memcpy(rawStr.get(), chars, length);
   (rawStr.get())[length] = '\0';
 
@@ -71,38 +65,4 @@ Hash String::hashString(const char *chars, int length) {
   return hash;
 }
 
-Module *Module::create(VM &vm, String *name) {
-  // TODO:
-  // should place the logics of finding loaded module here.
-  void *mem = vm.newObject(sizeof(Module));
-  ChunkRef chunk = Chunk::create();
-
-  return ::new(mem) Module(name, chunk);
-}
-
-bool Module::getGlobal(String *name, Value *result) {
-  auto global = globals.find(name);
-
-  if (global == globals.end()) {
-    return false;
-  }
-
-  *result = global->second;
-  return true;
-}
-
-bool Module::setGlobal(String *name, Value value) {
-  auto global = globals.find(name);
-  if (global == globals.end()) {
-    auto entry = std::make_pair(name, value);
-    globals.insert(entry);
-    
-    // indicates a new key.
-    return true;
-  }
-
-  // key exists already.
-  global->second = value;
-  return false;
-}
 } // namespace loxy

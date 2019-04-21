@@ -7,14 +7,17 @@
 
 namespace loxy {
 
-Parser::Parser(VM &vm, Scanner &scanner)
-  : vm(vm), scanner(scanner),
+Parser::Parser(VM &vm)
+  : scanner_(nullptr), vm(vm),
     hadError(false), panicMode(false),
-    currentChunk_(nullptr), functions(nullptr) {}
+    currentChunk_(nullptr), currentFunc_(nullptr) {}
 
 bool Parser::parse(Chunk *compilingChunk, const char *source) {
   currentChunk_ = compilingChunk;
-  scanner.init(source);
+
+  // create a scanner.
+  Scanner scanner(source);
+  scanner_ = &scanner;
 
   // begin a new function here.
   FunctionScope function;
@@ -27,7 +30,7 @@ bool Parser::parse(Chunk *compilingChunk, const char *source) {
     declaration();
   }
   
-  return hadError;
+  return !hadError;
 }
 
 static std::string printSrc(const Token &token, int idents) {
@@ -157,7 +160,7 @@ void Parser::advance() {
   previous = current;
 
   while (true) {
-    current = scanner.scanToken();
+    current = scanner_->scanToken();
     if (current.type != Tok::ERROR) break;
     errorAtCurrent(current.start);
   }
@@ -209,7 +212,7 @@ bool Parser::identifiersEqual(const Token &a, const Token &b) {
 uint8_t Parser::declareVariable(const char *msg) {
   consume(Tok::IDENTIFIER, msg);
 
-  if (functions->depth == 0) return declareGlobal();
+  if (currentFunc_->depth == 0) return declareGlobal();
 
   return declareLocal();
 }
@@ -220,7 +223,7 @@ uint8_t Parser::declareGlobal() {
 
 uint8_t Parser::declareLocal() {
   Token name = previous;
-  FunctionScope *function = functions;
+  FunctionScope *function = currentFunc_;
   int depth = function->depth;
 
   // checks for conflicts.
@@ -241,9 +244,9 @@ uint8_t Parser::declareLocal() {
 }
 
 int Parser::resolveLocal(const Token &name) {
-  for (int i = functions->count; i >= 0; i--) {
-    if (identifiersEqual(functions->getLocal(i).name, name)) {
-      if (functions->getLocal(i).depth == -1) {
+  for (int i = currentFunc_->count; i >= 0; i--) {
+    if (identifiersEqual(currentFunc_->getLocal(i).name, name)) {
+      if (currentFunc_->getLocal(i).depth == -1) {
         error("cannot read an uninitialized local variable");
       }
       return i;
@@ -254,12 +257,12 @@ int Parser::resolveLocal(const Token &name) {
 
 void Parser::defineVariable(uint8_t var) {
   // global
-  if (functions->depth == 0) {
+  if (currentFunc_->depth == 0) {
     emit(OpCode::DEFINE_GLOBAL);
     emit(var);  // index into the current chunk's constant table.
   } else {
     // mark the local variable as initialized.
-    functions->vars[functions->count - 1].depth = functions->depth;
+    currentFunc_->vars[currentFunc_->count - 1].depth = currentFunc_->depth;
   }
 }
 

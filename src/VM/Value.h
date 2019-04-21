@@ -8,28 +8,23 @@
 #include <cstring>
 #include <memory>
 #include "Common.h"
-#include "VM.h"
 
 namespace loxy {
 
-class Chunk;
 class Object;
 class String;
 class Module;
 class VM;
 
-typedef std::shared_ptr<Chunk> ChunkRef;
-
 // Value representation.
 
-/// ValueType - type tag for each Value.
+// ValueType - type tag for each Value.
 enum class ValueType {
   Bool,
   Nil,
   Number,
   Obj,
   String,
-  Module,
 
   // Used internally.
   Undef,
@@ -69,7 +64,6 @@ public:
   bool isNumber() const { return type == ValueType::Number; }
   bool isObj()    const { return type == ValueType::Obj; }
   bool isString() const { return type == ValueType::String; }
-  bool isModule() const { return type == ValueType::Module; }
 
   inline operator bool () const {
     assert(type == ValueType::Bool);
@@ -82,7 +76,7 @@ public:
   }
 
   inline operator Object* () const {
-    assert(type == ValueType::Obj || type == ValueType::String || type == ValueType::Module);
+    assert(type == ValueType::Obj || type == ValueType::String);
     return as.obj;
   }
 
@@ -99,7 +93,6 @@ public:
     case ValueType::Number: return (double)other == (double)(*this);
 
     case ValueType::String:
-    case ValueType::Module:
     case ValueType::Obj:    return (Object*)other == (Object*)(*this);
     }
   }
@@ -117,11 +110,11 @@ public:
 // Object representations.
 //
 // Objects are garbage collected, while resources used by compiler are
-// managed smart pointers.
+// managed via smart pointers.
 
 typedef uint32_t Hash;
 
-/// class Object - based object type inherited by every Loxy object.
+/// class Object - based object.
 class Object {
 public:
 
@@ -169,50 +162,6 @@ public:
   // called by [create] to figure out the hash value.
   static Hash hashString(const char *s, int length);
 };  // class tring.
-
-typedef std::map<String*, Value> SymbolTable;
-
-/// class Module - each loxy file is a module.
-class Module : public Object {
-private:
-
-  // the name of the module.
-  String* name;
-
-  // the chunk that contains bytecode.
-  ChunkRef chunk;
-
-  // top-level variables.
-  SymbolTable globals;
-
-  // local variables are stored directly on the stack.
-
-public:
-
-  Module(String* name, ChunkRef chunk)
-    : name(name), chunk(chunk) {}
-
-  ChunkRef getChunk() const { return chunk; }
-  void setChunk(ChunkRef c) { chunk = c; }
-
-  String* getName() const { return name; }
-  void setName(String* n) { name = n; }
-
-  /// getGlobal - finds a top-level variable within this module
-  ///   if not found, returns false without setting [result].
-  bool getGlobal(String* name, Value *result);
-
-  /// setGlobal - sets a top-level variable within this module.
-  bool setGlobal(String* name, Value value);
-
-  std::string toString() const {
-    Value name(this->name);
-    return std::string("[module ") + name.toString() + "]";
-  }
-
-  static Module* create(VM &vm, String *name);
-};  // class Module
-
 
 } // namespace loxy
 

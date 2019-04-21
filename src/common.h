@@ -1,4 +1,4 @@
-/// common.h - defines some macros used across loxy.
+// common.h - defines some macros used across loxy.
 #ifndef loxy_common_h
 #define loxy_common_h
 
@@ -21,12 +21,11 @@
 
   #include <stdio.h>
 
-  #define UNREACHABLE() \
-      do \
-      { \
-        assert(false && "reached unreachable!"); \
-      } \
-      while (0)
+  #define UNREACHABLE()                             \
+    do {                                            \
+      assert(false && "reached unreachable!");      \
+    }                                               \
+    while (0)
   
 #endif
 #endif

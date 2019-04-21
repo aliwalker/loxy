@@ -44,8 +44,8 @@ struct Token {
 
 public:
   Token()
-    : type(Tok::_EOF), start(nullptr),
-      length(-1), line(-1) {}
+  : type(Tok::_EOF), start(nullptr),
+    length(-1), line(-1) {}
 };
 
 class Scanner {

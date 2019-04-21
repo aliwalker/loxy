@@ -14,6 +14,7 @@ set (CMAKE_CXX_STANDARD 14)
 add_executable(loxy ${SOURCES})
 target_include_directories(
   loxy PUBLIC
+  src/Data
   src/Compiler
   src/VM)
 

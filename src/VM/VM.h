@@ -29,8 +29,8 @@ private:
   size_t allocatedBytes;
   size_t nextGC;
 
-  Module *currentModule;
-  size_t offset;
+  // loaded modules.
+  std::vector<Module*> modules_;
 
   std::vector<Value> stack;
   Object *first;
@@ -38,16 +38,24 @@ private:
   StringPool pool;
 
 public:
+  VM():
+    allocatedBytes(0),
+    nextGC(INITIAL_HEAP_SIZE),
+    first(nullptr) {}
+
   /// Interpret - interprets the [source] code, in the context of [module].
   InterpretResult interpret(const char *source, const char *module);
 
-  /// newObject - allocates memory for object of type [T]. 
-  void *newObject(size_t size);
+  // reallocate - garbage collected resources are alloacted from this
+  //  method.
+  void *reallocate(void *prev, size_t oldSize, size_t newSize);
 
-  /// run - runs currModule.
+  void collectGarbage();
+
+  // run - runs currModule.
   InterpretResult run();
 
-  /// loadModule - loads a module of [name].
+  // loadModule - loads a module of [name].
   Module *loadModule(const char *name);
 
   // findString - finds a String object from underlying string pool.
