@@ -54,6 +54,8 @@ String *String::create(VM &vm, const char *chars, int length) {
 
   interned = ::new(mem) String(std::move(rawStr), length, hash);
   vm.addString(interned);
+  interned->next = vm.first;
+  vm.first = interned;
   return interned;
 }
 

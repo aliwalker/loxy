@@ -28,12 +28,14 @@ enum class InterpretResult {
 };
 
 class VM {
+  friend class String;
+
 private:
   size_t allocatedBytes;
   size_t nextGC;
 
   // loaded modules.
-  SmallVector<Module*> modules_;
+  SmallVector<Module*> *modules_;
 
   Object *first;
   StringPool pool;
@@ -41,9 +43,9 @@ private:
 public:
   VM():
     allocatedBytes(0),
-    nextGC(INITIAL_HEAP_SIZE),
-    first(nullptr),
-    modules_(*this) {}
+    nextGC(1024 * 1024),
+    modules_(nullptr),
+    first(nullptr) {}
 
   /// Interpret - interprets the [source] code, in the context of [module].
   InterpretResult interpret(const char *source, const char *module);
@@ -51,8 +53,6 @@ public:
   // reallocate - garbage collected resources are alloacted from this
   //  method.
   void *reallocate(void *prev, size_t oldSize, size_t newSize);
-
-private:
 
   void collectGarbage();
 

@@ -1,8 +1,7 @@
 #ifndef loxy_module_h
 #define loxy_module_h
 
-#include <map>
-#include <memory>
+#include "Data/HashMap.h"
 #include "Data/SmallVector.h"
 #include "Managed.h"
 
@@ -12,18 +11,23 @@ class String;
 class Chunk;
 class Value;
 class VM;
-
-typedef std::map<String*, Value> SymbolTable;
+class HashMap;
 
 class Module : public Managed {
 private:
 
-  Module(VM &vm, String *name, String *path, String *src, SmallVector<Module*> *imports)
+  Module(VM &vm,
+        String *name,
+        String *path,
+        String *src,
+        HashMap *variables,
+        SmallVector<Module*> *imports)
   : vm(vm),
     name_(name),
     path_(path),
     src_(src),
     bytecode_(nullptr),
+    variables_(variables),
     imports_(imports) {}
 
 public:
@@ -76,7 +80,7 @@ private:
   Chunk *bytecode_;
 
   // top-level variables.
-  SymbolTable variables;
+  HashMap *variables_;
 
   // imported modules
   SmallVector<Module*> *imports_;

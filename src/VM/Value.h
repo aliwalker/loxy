@@ -114,7 +114,7 @@ public:
 
 // Object representations.
 //
-class Object : Managed {
+class Object : public Managed {
 public:
   virtual const char *cString() const { return "[Loxy Object]"; };
 };

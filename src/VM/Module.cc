@@ -8,41 +8,32 @@ namespace loxy {
 Module *Module::create(VM &vm, String *name, String *path, String *src) {
   void *mem = vm.reallocate(nullptr, 0, sizeof(Module));
   auto imports = SmallVector<Module*>::create(vm);
+  auto variables = HashMap::create(vm);
 
   assert(mem != nullptr && "Out of memory");
-  return ::new Module(vm, name, path, src, imports);
+  return ::new Module(vm, name, path, src, variables, imports);
 }
 
-void Module::destroy(VM &vm, Module **module) {
-  if (*module == nullptr) return;
+void Module::destroy(VM &vm, Module **modPtr) {
+  Module *module = *modPtr;
+  if (module == nullptr) return;
 
   // free owned resources
-  SmallVector<Module*>::destroy(vm, &((*module)->imports_));
-  (*module)->imports_ = nullptr;
+  SmallVector<Module*>::destroy(vm, &module->imports_);
+  HashMap::destroy(vm, &module->variables_);
 
   // free itself
-  vm.reallocate(*module, sizeof(Module), 0);
-  *module = nullptr;
+  vm.reallocate(module, sizeof(Module), 0);
+  module = nullptr;
 }
 
 void Module::addVariable(String *name, Value initializer) {
-  auto var = variables.find(name);
-  if (var == variables.end()) {
-    // new variable.
-    auto entry = std::make_pair(name, initializer);
-    variables.insert(entry);
-  }
-
-  // not exists yet.
-  var->second = initializer;
+  // top-level global variables can be redeclared.
+  variables_->set(Value(name), initializer);
 }
 
 bool Module::getVariable(String *name, Value *result) {
-  auto var = variables.find(name);
-  if (var == variables.end()) return false;
-
-  *result = var->second;
-  return true;
+  return variables_->get(Value(name), result);
 }
 
 bool Module::compile() {
@@ -52,7 +43,7 @@ bool Module::compile() {
   if (chunk == nullptr) {
     return false;
   }
-  bytecode_ = std::move(chunk);
+  bytecode_ = chunk;
   return true;
 }
 
