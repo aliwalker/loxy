@@ -17,18 +17,23 @@ class VM;
 class Chunk {
 public:
   // bytecode is designed to be of 1-byte length.
-  SmallVector<uint8_t> *code;
+  SmallVector<uint8_t> *code_;
 
   // Correspondance line info in source code.
-  SmallVector<int> *lines;
+  SmallVector<int> *lines_;
 
   // Constant pool.
-  SmallVector<Value> *constants;
+  SmallVector<Value> *constants_;
+
+  // helpers.
+  SmallVector<uint8_t> &code() const { return *code_; }
+  SmallVector<int> &lines() const { return *lines_; }
+  SmallVector<Value> &constants() const { return *constants_; }
 
 private:
   explicit Chunk(VM &vm, SmallVector<uint8_t> *code, 
     SmallVector<int> *lines, SmallVector<Value> *constants)
-    : code(code), lines(lines), constants(constants) {}
+    : code_(code), lines_(lines), constants_(constants) {}
 
 public:
 
@@ -56,6 +61,8 @@ public:
 
   static void destroy(VM &vm, Chunk **chunk);
 };
+
+void DissambleChunk(Chunk *chunk, const char *name);
 
 } // namespace loxy
 

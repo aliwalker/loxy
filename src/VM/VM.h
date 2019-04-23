@@ -34,7 +34,8 @@ private:
   size_t allocatedBytes;
   size_t nextGC;
 
-  // loaded modules.
+  // TODO:
+  // change this to a hashmap.
   SmallVector<Module*> *modules_;
 
   Object *first;

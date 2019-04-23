@@ -1,4 +1,3 @@
-// common.h - defines some macros used across loxy.
 #ifndef loxy_common_h
 #define loxy_common_h
 

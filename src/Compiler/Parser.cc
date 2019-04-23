@@ -324,8 +324,8 @@ void Parser::patchJump(int index) {
   if (offset > UINT16_MAX)  error("jump too far");
 
   // big endian
-  (*(currentChunk_->code))[index] = (offset >> 8) & 0xff;
-  (*(currentChunk_->code))[index + 1] = offset &0xff;
+  currentChunk_->code()[index] = (offset >> 8) & 0xff;
+  currentChunk_->code()[index + 1] = offset &0xff;
 }
 
 // driver for expressions
