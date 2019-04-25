@@ -11,7 +11,7 @@ namespace loxy {
 
 template<typename T>
 class SmallVector;
-
+class HashMap;
 class Chunk;
 class Value;
 class Object;
@@ -19,7 +19,7 @@ class String;
 class Module;
 
 typedef uint32_t Hash;
-typedef std::map<Hash, String*> StringPool;
+//typedef std::map<Hash, String*> StringPool;
 
 enum class InterpretResult {
   Ok,
@@ -29,6 +29,7 @@ enum class InterpretResult {
 
 class VM {
   friend class String;
+  friend class Module;
 
 private:
   size_t allocatedBytes;
@@ -39,14 +40,12 @@ private:
   SmallVector<Module*> *modules_;
 
   Object *first;
-  StringPool pool;
+
+  HashMap *stringPool;
 
 public:
-  VM():
-    allocatedBytes(0),
-    nextGC(1024 * 1024),
-    modules_(nullptr),
-    first(nullptr) {}
+  VM();
+  ~VM();
 
   /// Interpret - interprets the [source] code, in the context of [module].
   InterpretResult interpret(const char *source, const char *module);

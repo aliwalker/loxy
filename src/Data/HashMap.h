@@ -8,17 +8,20 @@
 namespace loxy
 {
 
+class String;
 class VM;
 
 typedef uint32_t Hash;
 
 struct Entry {
-  Value key;
+  // TODO: replace [key] with Value.
+  // 
+  String *key;
   Value value;
 
   // an empty entry
   Entry()
-  : key(Value::Undef),
+  : key(nullptr),
     value(Value::Nil) {}
 };
 
@@ -35,14 +38,12 @@ private:
   // blob of memory holding entries
   Entry *entries_;
 
-  static Hash hashValue(Value value);
-
-  static bool isEmpty(Entry *entry) { return entry->key == Value::Undef && entry->value == Value::Nil; }
-  static bool isTombstone(Entry *entry) { return entry->key == Value::Undef && entry->value == Value::True; }
+  static bool isEmpty(Entry *entry) { return entry->key == nullptr && entry->value == Value::Nil; }
+  static bool isTombstone(Entry *entry) { return entry->key == nullptr && entry->value == Value::True; }
 
   // find an entry from [entries]. This method will always return since
   // [key] is hashable.
-  Entry *_find(Value key);
+  Entry *_find(String *key);
 
   // ensures entries has at least [desiredCap].
   void ensureCapacity(int leastCap);
@@ -60,9 +61,9 @@ public:
   static void destroy(VM &vm, HashMap **map);
 
   // sets entry with [key] to a tombstone if it exists. returns true indicating success.
-  bool del(Value key);
-  bool get(Value key, Value *result);
-  bool set(Value key, Value value);
+  bool del(String *key);
+  bool get(String *key, Value *result);
+  bool set(String *key, Value value);
 };
 
 } // namespace loxy

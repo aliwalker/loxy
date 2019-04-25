@@ -3,8 +3,24 @@
 #include "Module.h"
 #include "VM.h"
 #include "Value.h"
+#include "Data/SmallVector.h"
+#include "Data/HashMap.h"
 
 namespace loxy {
+
+VM::VM():
+  allocatedBytes(0),
+  nextGC(1024 * 1024),
+  first(nullptr) {
+
+  modules_ = SmallVector<Module*>::create(*this);
+  stringPool = HashMap::create(*this);
+}
+
+VM::~VM() {
+  SmallVector<Module*>::destroy(*this, &modules_);
+  HashMap::destroy(*this, &stringPool);
+}
 
 void *VM::reallocate(void *prev, size_t oldSize, size_t newSize) {
   allocatedBytes += newSize - oldSize;
@@ -28,11 +44,17 @@ void *VM::reallocate(void *prev, size_t oldSize, size_t newSize) {
   return realloc(prev, newSize);
 }
 
+String *VM::findString(const char *chars,
+                       int length,
+                       uint32_t hash) {
+  Value str;
+}
+
 InterpretResult VM::run(Module *module) {
   const Chunk *code = module->getBody();
   Value stack[STACK_MAX];
   Value *stackTop = stack;
-  size_t ip = 0;
+  int ip = 0;
 
 //----=== helpers ===----//
 
@@ -184,7 +206,8 @@ InterpretResult VM::run(Module *module) {
     }
 
     case OpCode::JUMP: {
-      ip += read_short();
+      int offset = read_short();
+      ip += offset;
       break;
     }
 

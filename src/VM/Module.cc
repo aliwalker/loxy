@@ -29,11 +29,17 @@ void Module::destroy(VM &vm, Module **modPtr) {
 
 void Module::addVariable(String *name, Value initializer) {
   // top-level global variables can be redeclared.
-  variables_->set(Value(name), initializer);
+  variables_->set(name, initializer);
+}
+
+bool Module::setVariable(String *name, Value value) {
+  // if [name] is a new key, then it means [name] wasn't declared,
+  // thus failed.
+  return !variables_->set(name, value);
 }
 
 bool Module::getVariable(String *name, Value *result) {
-  return variables_->get(Value(name), result);
+  return variables_->get(name, result);
 }
 
 bool Module::compile() {

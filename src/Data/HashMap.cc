@@ -22,8 +22,8 @@ void HashMap::destroy(VM &vm, HashMap **mapPtr) {
   map = nullptr;
 }
 
-Entry *HashMap::_find(Value key) {
-  Hash index = hashValue(key) & capacityMask_;
+Entry *HashMap::_find(String *key) {
+  Hash index = key->hash() & capacityMask_;
   Entry *tombstone = nullptr;
 
   while (true) {
@@ -36,37 +36,37 @@ Entry *HashMap::_find(Value key) {
   }
 }
 
-bool HashMap::del(Value key) {
+bool HashMap::del(String *key) {
   if (count_ == 0) return false;
 
   Entry *entry = _find(key);
   
   // empty or tombstone entry
-  if (entry->key == Value::Undef)  return false;
+  if (entry->key == nullptr)  return false;
 
   // set tombstone
-  entry->key = Value::Undef;
+  entry->key = nullptr;
   entry->value = Value::True;
   return true;
 }
 
-bool HashMap::get(Value key, Value *value) {
+bool HashMap::get(String *key, Value *value) {
   if (entries_ == nullptr) return false;
 
   Entry *entry = _find(key);
 
   // empty or tombstone entry
-  if (entry->key == Value::Undef) return false;
+  if (entry->key == nullptr) return false;
 
   *value = entry->value;
   return true;
 }
 
-bool HashMap::set(Value key, Value value) {
+bool HashMap::set(String *key, Value value) {
   ensureCapacity(count_ + 1);
 
   Entry *entry = _find(key);
-  bool isNewKey = entry->key == Value::Undef;
+  bool isNewKey = entry->key == nullptr;
 
   if (isEmpty(entry)) count_++;
 
@@ -94,7 +94,7 @@ void HashMap::ensureCapacity(int leastCap) {
   count_ = 0;
   for (int i = 0; i <= capacityMask_; i++) {
     Entry *entry = &entries_[i];
-    if (entry->key == Value::Undef) continue;
+    if (entry->key == nullptr) continue;
 
     Entry *dest = _find(entry->key);
     dest->key = entry->key;
