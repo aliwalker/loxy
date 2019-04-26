@@ -24,7 +24,7 @@ void Module::destroy(VM &vm, Module **modPtr) {
 
   // free itself
   vm.reallocate(module, sizeof(Module), 0);
-  module = nullptr;
+  *modPtr = nullptr;
 }
 
 void Module::addVariable(String *name, Value initializer) {

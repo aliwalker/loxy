@@ -10,6 +10,7 @@ namespace loxy
 
 class String;
 class VM;
+class StringPool;
 
 typedef uint32_t Hash;
 
@@ -26,6 +27,9 @@ struct Entry {
 };
 
 class HashMap : public Managed {
+  // StringPool will search from [entries_].
+  friend class StringPool;
+
 private:
   VM &vm;
 
@@ -43,7 +47,7 @@ private:
 
   // find an entry from [entries]. This method will always return since
   // [key] is hashable.
-  Entry *_find(String *key);
+  Entry *_find(String *key) const;
 
   // ensures entries has at least [desiredCap].
   void ensureCapacity(int leastCap);
@@ -62,7 +66,7 @@ public:
 
   // sets entry with [key] to a tombstone if it exists. returns true indicating success.
   bool del(String *key);
-  bool get(String *key, Value *result);
+  bool get(String *key, Value *result) const;
   bool set(String *key, Value value);
 };
 

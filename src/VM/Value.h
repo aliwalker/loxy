@@ -127,11 +127,11 @@ private:
 
   // TODO: change this for consistency.
   std::unique_ptr<char> chars;
-  int length;
+  int length_;
   Hash hash_;
 
   String(std::unique_ptr<char> chars, int length, Hash hash) :
-    chars(std::move(chars)), length(length), hash_(hash) {}
+    chars(std::move(chars)), length_(length), hash_(hash) {}
 
 public:
 
@@ -140,6 +140,7 @@ public:
   static String* create(VM &vm, const char *chars, int length = -1);
 
   Hash hash() const { return hash_; }
+  int length() const { return length_; }
 
   const char *cString() const { return chars.get(); }
   

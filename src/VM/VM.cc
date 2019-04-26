@@ -7,19 +7,62 @@
 #include "Data/HashMap.h"
 
 namespace loxy {
+// class String
+//
+StringPool *StringPool::create(VM &vm) {
+  void *mem = vm.reallocate(nullptr, 0, sizeof(StringPool));
+  assert(mem != nullptr && "Out of memory");
 
+  auto map = HashMap::create(vm);
+  return ::new(mem) StringPool(map);
+}
+
+void StringPool::destroy(VM &vm, StringPool **poolPtr) {
+  if (poolPtr == nullptr || *poolPtr == nullptr)  return;
+
+  StringPool *pool = *poolPtr;
+  HashMap::destroy(vm, &pool->map_);
+  vm.reallocate(pool, sizeof(StringPool), 0);
+  *poolPtr = nullptr;
+}
+
+String *StringPool::findString(const char *chars, int length, uint32_t hash) const {
+  Entry *entries = map_->entries_;
+
+  // there isn't anything yet,
+  if (entries == nullptr) return nullptr;
+  uint32_t index = hash & map_->capacityMask_;
+  
+  // The loop is similar to HashMap::_find
+  while (true) {
+    Entry *entry = &entries[index];
+    if (HashMap::isEmpty(entry))  return nullptr;
+    if (HashMap::isTombstone(entry))  continue;
+    if (entry->key->hash() == hash &&
+        entry->key->length() == length &&
+        memcmp(entry->key->cString(), chars, length) == 0) return entry->key;
+
+    index = (index + 1) & map_->capacityMask_;
+  }
+}
+
+void StringPool::addString(String *string) {
+  map_->set(string, Value::True);
+}
+
+// class VM.
 VM::VM():
   allocatedBytes(0),
   nextGC(1024 * 1024),
   first(nullptr) {
 
   modules_ = SmallVector<Module*>::create(*this);
-  stringPool = HashMap::create(*this);
+  stringPool = StringPool::create(*this);
 }
 
 VM::~VM() {
   SmallVector<Module*>::destroy(*this, &modules_);
-  HashMap::destroy(*this, &stringPool);
+  StringPool::destroy(*this, &stringPool);
 }
 
 void *VM::reallocate(void *prev, size_t oldSize, size_t newSize) {
@@ -47,7 +90,11 @@ void *VM::reallocate(void *prev, size_t oldSize, size_t newSize) {
 String *VM::findString(const char *chars,
                        int length,
                        uint32_t hash) {
-  Value str;
+  return stringPool->findString(chars, length, hash);
+}
+
+void VM::addString(String *string) {
+  stringPool->addString(string);
 }
 
 InterpretResult VM::run(Module *module) {

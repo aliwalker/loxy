@@ -19,7 +19,18 @@ class String;
 class Module;
 
 typedef uint32_t Hash;
-//typedef std::map<Hash, String*> StringPool;
+
+class StringPool {
+  HashMap *map_;
+
+  StringPool(HashMap *map) : map_(map) {}
+public:
+
+  static StringPool *create(VM &vm);
+  static void destroy(VM &vm, StringPool **poolPtr);
+  String *findString(const char *chars, int length, uint32_t hash) const;
+  void addString(String *string);
+};
 
 enum class InterpretResult {
   Ok,
@@ -41,7 +52,7 @@ private:
 
   Object *first;
 
-  HashMap *stringPool;
+  StringPool *stringPool;
 
 public:
   VM();
@@ -62,7 +73,7 @@ public:
   // loadModule - loads a module of [name].
   Module *loadModule(const char *name);
 
-  // findString - finds a String object from underlying string pool.
+  // findString - finds a String* from underlying string pool.
   String *findString(const char *chars, int length, uint32_t hash);
 
   // addString - adds the give string to string pool.

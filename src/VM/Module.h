@@ -79,6 +79,8 @@ private:
   // the compiled bytecode.
   Chunk *bytecode_;
 
+  // TODO:
+  // change this to an array.
   // top-level variables.
   HashMap *variables_;
 

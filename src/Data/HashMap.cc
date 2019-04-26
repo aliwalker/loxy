@@ -22,7 +22,7 @@ void HashMap::destroy(VM &vm, HashMap **mapPtr) {
   map = nullptr;
 }
 
-Entry *HashMap::_find(String *key) {
+Entry *HashMap::_find(String *key) const {
   Hash index = key->hash() & capacityMask_;
   Entry *tombstone = nullptr;
 
@@ -50,7 +50,7 @@ bool HashMap::del(String *key) {
   return true;
 }
 
-bool HashMap::get(String *key, Value *value) {
+bool HashMap::get(String *key, Value *value) const {
   if (entries_ == nullptr) return false;
 
   Entry *entry = _find(key);
