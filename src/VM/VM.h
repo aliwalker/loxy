@@ -80,7 +80,7 @@ public:
   void addString(String *string);
 private:
 
-  void runtimeError(const char *format, ...);
+  void error(const char *msg, int line);
 };
 
 } // namespace loxy

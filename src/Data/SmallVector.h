@@ -121,7 +121,7 @@ private:
     if (capacity_ > size) return;
 
     // grow
-    int newCap = capacity_ * GROW_PERCENT;
+    int newCap = capacity_ == 0 ? MIN_CAP : capacity_ * GROW_PERCENT;
     while (newCap < size) newCap *= GROW_PERCENT;
     
     // update

@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdlib.h>
 
 #include "Module.h"
@@ -107,7 +108,7 @@ InterpretResult VM::run(Module *module) {
 
 #define validate_numbers(a, b)                            \
   if (!(a).isNumber() || !(b).isNumber()) {               \
-    runtimeError("Both operands must be numbers");        \
+    error("Both operands must be numbers", code->lines()[ip]);               \
     return InterpretResult::Runtime_Error;                \
   }
 
@@ -279,5 +280,11 @@ InterpretResult VM::run(Module *module) {
 #undef read_string
 #undef read_constant
 }
+
+void VM::error(const char *msg, int line) {
+  fprintf(stderr, "[line %d]: %s", line, msg);
+}
+
+void VM::collectGarbage() {}
 
 } // namespace loxy
