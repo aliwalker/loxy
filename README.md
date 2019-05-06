@@ -1,3 +1,3 @@
 ## Loxy
 
-A C++ implementation of Lox language. This is currently a playground.
+Loxy was a prototype project for me.
